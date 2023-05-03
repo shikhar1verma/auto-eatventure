@@ -4,7 +4,9 @@ import time
 import numpy as np
 from sklearn.cluster import DBSCAN
 import random
-
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 class AutoEatventure:
     def __init__(self):
@@ -303,13 +305,13 @@ dev.start_app()
 # time.sleep(1)
 # dev.click(email_input_coords)
 # time.sleep(3)
-# dev.input_text('shikhar@yopmail.com')
+# dev.input_text(os.getenv('EMAIL'))
 # time.sleep(1)
 # dev.click(text_ok_button_coords)
 # time.sleep(1)
 # dev.click(password_input_coords)
 # time.sleep(3)
-# dev.input_text('avtar1verma')
+# dev.input_text(os.getenv('PASSWORD'))
 # time.sleep(1)
 # dev.click(text_ok_button_coords)
 # time.sleep(1)
