@@ -1,0 +1,10 @@
+[MASTER]
+indent-string='  '
+
+[MESSAGES CONTROL]
+disable=C0330
+
+[FORMAT]
+max-line-length=79
+indent-after-paren=2
+expected-line-ending-format=LF
