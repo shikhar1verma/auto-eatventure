@@ -1,3 +1,4 @@
+import constants as loc
 import cv2
 from adbutils import adb
 import time
@@ -5,6 +6,10 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 import random
 import os
+import io
+import subprocess
+from io import BytesIO
+from PIL import Image
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -30,11 +35,17 @@ class AutoEatventure:
             'buy_better_food_button': './matching_screenshots/buy_better_food_button.png',
             'go_next_level': './matching_screenshots/go_next_level_icon.png',
             'no_boost_indicator_2x': './matching_screenshots/no_boost_indicator_2x.png',
+            'fly_next_city_icon': './matching_screenshots/fly_next_city_icon.png',
+            'small_investor_icon': './matching_screenshots/small_investor_icon.png',
+            'investor': './matching_screenshots/investor.png',
             'ads_crosses': {
                 'cross1': './matching_screenshots/ads_crosses/cross1.png',
             }
         }
         self.matching_templates_cv2 = {}
+        self.load_templates()
+
+    def load_templates(self):
         # {
         #     'notification': {
         #         'simple': '',
@@ -42,10 +53,6 @@ class AutoEatventure:
         #         'bgr2hsv': ''
         #     }
         # }
-
-        self.load_templates()
-
-    def load_templates(self):
         for key, value in self.matching_screenshots_path.items():
             if key == 'ads_crosses':
                 self.matching_templates_cv2[key] = {}
@@ -73,14 +80,35 @@ class AutoEatventure:
         self.device.shell(f"am force-stop {self.package_name}")
         return
 
+    # def capture_screenshot(self):
+    #     pilimg = self.device.screenshot()
+    #     pilimg.save(self.captured_sc_path)
+    #     self.current_cv2_sc = cv2.imread(self.captured_sc_path)
+    #     self.current_cv2_sc_grayscale = cv2.imread(
+    #         self.captured_sc_path, cv2.IMREAD_GRAYSCALE)
+    #     self.current_cv2_sc_bgr2hsv = cv2.cvtColor(
+    #         self.current_cv2_sc, cv2.COLOR_BGR2HSV)
+    #     return
+
     def capture_screenshot(self):
-        pilimg = self.device.screenshot()
-        pilimg.save(self.captured_sc_path)
-        self.current_cv2_sc = cv2.imread(self.captured_sc_path)
-        self.current_cv2_sc_grayscale = cv2.imread(
-            self.captured_sc_path, cv2.IMREAD_GRAYSCALE)
+        # pilimg = self.device.screenshot()
+        adb_command = f'adb -s {self.device.serial} shell screencap -p'
+        output = subprocess.check_output(adb_command.split())
+
+        # Convert the output to a PIL Image object
+        pilimg = Image.open(io.BytesIO(output))
+        pilimg.load()
+        pilimg = pilimg.convert("RGB")
+
+        # # Convert PIL image to numpy array (OpenCV format)
+        open_cv_image = np.array(pilimg)
+        open_cv_image = open_cv_image[:, :, ::-1].copy()  # Convert RGB to BGR
+
+        self.current_cv2_sc = open_cv_image
+        self.current_cv2_sc_grayscale = cv2.cvtColor(
+            open_cv_image, cv2.COLOR_BGR2GRAY)
         self.current_cv2_sc_bgr2hsv = cv2.cvtColor(
-            self.current_cv2_sc, cv2.COLOR_BGR2HSV)
+            open_cv_image, cv2.COLOR_BGR2HSV)
         return
 
     def find_template(self, image, template, threshold=0.8):
@@ -130,21 +158,54 @@ class AutoEatventure:
         centroids = [c.astype(int).tolist() for c in centroids]
         return centroids
 
-    def is_image_template_matching(self, template_cv_imgs: dict):
+    def is_image_template_matching(self, template_cv_imgs: dict, threshold=0.8):
         hsv_sc = self.current_cv2_sc_bgr2hsv
         hsv_template = template_cv_imgs['bgr2hsv']
-        matched_coordinates = self.find_template(hsv_sc, hsv_template)
+        matched_coordinates = self.find_template(
+            hsv_sc, hsv_template, threshold=threshold)
         if matched_coordinates:
             return True
         return False
 
-    def is_bnw_image_template_matching(self, template_cv_imgs: dict):
+    def is_bnw_image_template_matching(self, template_cv_imgs: dict, threshold=0.8):
         screenshot = self.current_cv2_sc_grayscale
         template = template_cv_imgs['grayscale']
-        matched_coordinates = self.find_template(screenshot, template)
+        matched_coordinates = self.find_template(
+            screenshot, template, threshold=threshold)
         if matched_coordinates:
             return True
         return False
+
+    def is_investor_image_template_matching(self, template_cv_imgs: dict, threshold=0.8):
+        screenshot = self.apply_investor_mask(self.current_cv2_sc)
+        template = self.apply_investor_mask(template_cv_imgs['simple'])
+        matched_coordinates = self.find_template(
+            screenshot, template, threshold=threshold)
+        if matched_coordinates:
+            return True
+        return False
+
+    def apply_investor_mask(self, image, tolerance=15):
+        # cap = ['#696548', '#776F4B', '#8B8350', '#87804D']
+        colors = [(26, 80, 105), (25, 94, 119), (26, 108, 139), (26, 110, 135)]
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        combined_mask = np.zeros_like(hsv_image[:, :, 0])
+
+        for color in colors:
+            lower_color = np.array(
+                [max(color[0] - tolerance, 0), max(color[1] - tolerance, 0), max(color[2] - tolerance, 0)])
+            upper_color = np.array([min(color[0] + tolerance, 180),
+                                    min(color[1] + tolerance, 255), min(color[2] + tolerance, 255)])
+
+            mask = cv2.inRange(hsv_image, lower_color, upper_color)
+            combined_mask = cv2.bitwise_or(combined_mask, mask)
+
+        masked_image = cv2.bitwise_and(image, image, mask=combined_mask)
+        return masked_image
+
+    def convert_to_binary(self, im_gray, threshold=128):
+        im_bw = cv2.threshold(im_gray, threshold, 255, cv2.THRESH_BINARY)[1]
+        return im_bw
 
     def is_having_notification(self):
         return self.is_image_template_matching(self.matching_templates_cv2['notification'])
@@ -180,11 +241,22 @@ class AutoEatventure:
         return self.is_image_template_matching(self.matching_templates_cv2['ads_crosses']['cross1'])
 
     def is_having_no_boost_indicator_2x(self):
-        return self.is_image_template_matching(self.matching_templates_cv2['no_boost_indicator_2x'])
+        return self.is_image_template_matching(self.matching_templates_cv2['no_boost_indicator_2x'], 0.92)
+
+    def is_having_fly_next_city_icon(self):
+        return self.is_image_template_matching(self.matching_templates_cv2['fly_next_city_icon'])
+
+    def is_having_small_investor_icon(self):
+        return self.is_bnw_image_template_matching(self.matching_templates_cv2['small_investor_icon'])
+
+    def is_having_investor(self):
+        return self.is_investor_image_template_matching(self.matching_templates_cv2['investor'], 0.7)
 
     def get_all_boxes_locations(self):
-        screenshot = self.current_cv2_sc_grayscale
-        template = self.matching_templates_cv2['box']['grayscale']
+        screenshot = self.convert_to_binary(
+            self.current_cv2_sc_grayscale, threshold=160)
+        template = self.convert_to_binary(
+            self.matching_templates_cv2['box']['grayscale'], threshold=160)
         # hsv_sc = cv2.cvtColor(screenshot, cv2.COLOR_BGR2HSV)
         # hsv_template = cv2.cvtColor(template, cv2.COLOR_BGR2HSV)
         # matched_coordinates = self.find_all_templates(hsv_sc, hsv_template)
@@ -206,6 +278,36 @@ class AutoEatventure:
         hsv_template = self.matching_templates_cv2['buy_better_food_button']['bgr2hsv']
         matched_coordinates = self.find_template(hsv_sc, hsv_template)
         return matched_coordinates
+
+    def redeem_investor(self):
+        redeem_button_coords = {
+            'x': 720,
+            'y': 2020
+        }
+        print('Finding investor')
+        mc = None
+        if self.is_having_small_investor_icon():
+            sc = self.current_cv2_sc_grayscale
+            template = self.matching_templates_cv2['small_investor_icon']['grayscale']
+            mc = self.find_template(sc, template)
+            self.click([mc[0]+10, mc[1]+10])
+        elif self.is_having_investor():
+            sc = self.apply_investor_mask(self.current_cv2_sc)
+            template = self.apply_investor_mask(
+                self.matching_templates_cv2['investor']['simple'])
+            mc = self.find_template(sc, template, 0.7)
+            self.click([mc[0]+55, mc[1]+100])
+
+        if mc:
+            print('Found investor')
+
+            time.sleep(1)
+            print('Now claiming')
+            self.click(redeem_button_coords)
+            time.sleep(5)
+            self.start_app()
+            time.sleep(2)
+        return
 
     def get_ad_cross_button(self):
         screenshot = self.current_cv2_sc_grayscale
@@ -234,7 +336,24 @@ class AutoEatventure:
         self.device.shell(f"input text '{escaped_text}'")
         return
 
-    def run_ads(self):
+    def run_full_boost_ads(self):
+        btn_coords = {
+            'x': 720,
+            'y': 2950
+        }
+        time.sleep(1)
+        with Timer("Running full boost ads"):
+            for i in range(12):
+                print('click ad button')
+                self.click(btn_coords)
+                # time.sleep(60)
+                time.sleep(5)
+                self.start_app()
+                print('app started')
+                time.sleep(2)
+        return
+
+    def run_ad(self):
         btn_coords = {
             'x': 720,
             'y': 2950
@@ -249,6 +368,53 @@ class AutoEatventure:
         time.sleep(1)
         return
 
+    def check_to_go_next_level(self):
+        if dev.is_having_next_level_icon():
+            dev.click(loc.next_level_button_coords)
+            time.sleep(0.2)
+            dev.click(loc.renovate_button_coords)
+            time.sleep(10)
+            dev.click(loc.first_lemonade_stand_open_coords)
+        elif dev.is_having_fly_next_city_icon():
+            dev.click(loc.next_level_button_coords)
+            time.sleep(0.2)
+            dev.click(loc.fly_next_city_button_coords)
+            time.sleep(15)
+            dev.click(loc.welcome_city_ok_button_coords)
+            time.sleep(5)
+            dev.click(loc.first_lemonade_stand_open_coords)
+            time.sleep(5)
+        return
+
+    def upgrade_food_items(self, coords):
+        for c in coords[:3]:  # as mostly after 3 no food icon is visible
+            dev.click([c[0], c[1] + 30])
+            time.sleep(0.2)
+
+            # hack for better food button
+            y_neg_offset = 150
+            dev.click_and_hold(c[0], c[1] - y_neg_offset, 700)
+            time.sleep(0.2)
+            dev.click(loc.null_click_coords)
+            time.sleep(0.2)
+        return
+
+    def open_boxes(self):
+        coords = dev.get_all_boxes_locations()
+        for c in coords:
+            dev.click(c)
+            time.sleep(0.2)
+        return
+
+    def do_upgrades(self):
+        dev.click(loc.upgrade_button_coords)
+        time.sleep(0.3)
+        for i in range(5):
+            dev.click(loc.single_upgrade_button_coords)
+            time.sleep(0.2)
+        dev.click(loc.close_upgrade_button_coords)
+        return
+
 
 class Timer:
     def __init__(self, name=""):
@@ -260,92 +426,6 @@ class Timer:
     def __exit__(self, exc_type, exc_val, exc_tb):
         elapsed_time = time.time() - self.start_time
         print(f"{self.name} elapsed time: {elapsed_time} seconds\n")
-
-
-close_nofication_coords = {
-    'x': 710,
-    'y': 1894
-}
-
-first_lemonade_stand_open_coords = {
-    'x': 713,
-    'y': 1845
-}
-
-settings_coords = {
-    'x': 1339,
-    'y': 185
-}
-
-cloud_save_coords = {
-    'x': 654,
-    'y': 1632
-}
-
-email_input_coords = {
-    'x': 700,
-    'y': 1320
-}
-
-password_input_coords = {
-    'x': 700,
-    'y': 1600,
-}
-
-text_ok_button_coords = {
-    'x': 1374,
-    'y': 1845,
-}
-
-login_button_coords = {
-    'x': 700,
-    'y': 1940
-}
-
-use_cloud_save_button_coords = {
-    'x': 990,
-    'y': 2100
-}
-
-close_game_for_restart_button_coords = {
-    'x': 734,
-    'y': 1821
-}
-
-close_offline_earnings_coords = {
-    'x': 1150,
-    'y': 1164
-}
-
-upgrade_button_coords = {
-    'x': 1290,
-    'y': 2904
-}
-
-single_upgrade_button_coords = {
-    'x': 1143,
-    'y': 1283
-}
-
-close_upgrade_button_coords = {
-    'x': 1222,
-    'y': 1045
-}
-
-next_level_button_coords = {
-    'x': 150,
-    'y': 2900
-}
-
-renovate_button_coords = {
-    'x': 700,
-    'y': 2200
-}
-
-ads_button_coords = {
-    'x': 720,
-    'y': 2950
-}
 
 
 dev = AutoEatventure()
@@ -380,7 +460,6 @@ dev.start_app()
 
 # print('Found settings was success')
 
-
 # first time login with cloud save
 # time.sleep(1)
 # dev.click(settings_coords)
@@ -405,79 +484,49 @@ dev.start_app()
 # time.sleep(8) # for loading game
 # dev.click(close_game_for_restart_button_coords)
 
-# below logic is after setup is done and you start the game regulartly
+# INTIALIZATION OF GAME CHECK
 while True:
     dev.capture_screenshot()
     if dev.is_having_settings():
         break
     if dev.is_having_offline_earnings():
-        dev.click(close_offline_earnings_coords)
+        dev.click(loc.close_offline_earnings_coords)
         break
 
     time.sleep(5)
 
 
-# upgrade click
-# time.sleep(2)
-# dev.click(upgrade_button_coords)
-# time.sleep(1)
-# while True:
-#     dev.capture_screenshot()
-#     if dev.is_having_single_upgrade():
-#         dev.click(single_upgrade_button_coords)
-#     else:
-#         dev.click(close_upgrade_button_coords)
-#         break
-#     time.sleep(0.5)
-
-# boxes find and click
-# dev.capture_screenshot()
-# if dev.is_having_box():
-#     coords = dev.get_all_boxes_locations()
-#     for c in coords:
-#         dev.click(c)
-#         time.sleep(0.5)
-
-
-# get better updates
+# MAIN LOGIC
 count = 0
 start_time = time.time()
 while True:
     count += 1
 
-    # check for ads
-    if count == 1 or count % 100 == 0:  # every 100th iteration
-        with Timer("Running ads"):
-            print('Checking for boost')
-            if dev.is_having_no_boost_indicator_2x():
-                print('running ads')
-                dev.run_ads()
-                time.sleep(2)
-
     with Timer("Capturing screenshot"):
         dev.capture_screenshot()
 
+    # check for ads
+    if count == 1 or count % 100 == 0:  # every 100th iteration
+        with Timer("Running full boost ads"):
+            print('Checking for boost')
+            if dev.is_having_no_boost_indicator_2x():
+                print('running ads')
+                dev.run_full_boost_ads()
+                time.sleep(2)
+
     # maind upgrades
     # upgrade click
-    if count % 5 == 0:
-        with Timer("Upgrading items"):
+    with Timer("Upgrading items"):
+        if count % 5 == 0 and dev.is_having_upgrade():
             print('Upgrading items')
-            dev.click(upgrade_button_coords)
-            time.sleep(0.3)
-            for i in range(5):
-                dev.click(single_upgrade_button_coords)
-                time.sleep(0.2)
-            dev.click(close_upgrade_button_coords)
+            dev.do_upgrades()
             dev.capture_screenshot()
 
     if count % 2 == 0:
         with Timer("Finding boxes"):
             # boxes find and click
             print('finding boxes')
-            coords = dev.get_all_boxes_locations()
-            for c in coords:
-                dev.click(c)
-                time.sleep(0.2)
+            dev.open_boxes()
 
     with Timer("Finding food icons"):
         # dev.capture_screenshot()
@@ -487,30 +536,22 @@ while True:
         # c = random.choice(coords)
         with Timer("Clicking food icons"):
             random.shuffle(coords)
-            for c in coords[:3]: # as mostly after 3 no food icon is visible
-                dev.click(c)
-                time.sleep(0.1)
+            dev.upgrade_food_items(coords)
 
-                # hack for better food button
-                y_neg_offset = 150
-                dev.click_and_hold(c[0], c[1] - y_neg_offset, 700)
-                time.sleep(0.1)
-                dev.click([c[0], c[1] + 30])
-                time.sleep(0.1)
     else:
-        # next level check
-        print('next level check')
-        if dev.is_having_next_level_icon():
-            dev.click(next_level_button_coords)
-            time.sleep(0.2)
-            dev.click(renovate_button_coords)
-            time.sleep(10)
-            dev.click(first_lemonade_stand_open_coords)
+        if count % 5 == 0:
+            # next level check
+            print('next level check')
+            dev.check_to_go_next_level()
+    if count % 3 == 0:
+        with Timer("Redeem investor"):
+            dev.redeem_investor()
 
 # collect full boost
 # time.sleep(2)
-# for i in range(12):
-#     dev.run_ads()
+# with Timer("Running full boost ads"):
+#     for i in range(12):
+#         dev.run_ads()
 
 
 # run ads and close it
