@@ -31,6 +31,7 @@ class AutoEatventure:
             'upgrade_button': './matching_screenshots/upgrade_button.png',
             'single_upgrade': './matching_screenshots/single_upgrade.png',
             'box': './matching_screenshots/box.png',
+            'box2': './matching_screenshots/box2.png',
             'buy_better_food_icon': './matching_screenshots/buy_better_food_icon.png',
             'buy_better_food_button': './matching_screenshots/buy_better_food_button.png',
             'go_next_level': './matching_screenshots/go_next_level_icon.png',
@@ -122,7 +123,10 @@ class AutoEatventure:
         return None
 
     def find_all_templates(self, image, template, end=False, threshold=0.8):
-        template_width, template_height = template.shape[::-1]
+        if len(template.shape[::-1]) == 2:
+            template_width, template_height = template.shape[::-1]
+        else:
+            template_width, template_height = template.shape[::-1][1:]
         result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
         # looking at best position
         m = cv2.minMaxLoc(result)
@@ -203,6 +207,31 @@ class AutoEatventure:
         masked_image = cv2.bitwise_and(image, image, mask=combined_mask)
         return masked_image
 
+    def apply_box_mask(self, image, tolerance=2):
+        # box = ['#FFE18B', '#AB7245', '#8C5E37', '#E8BB72', '#FED080']
+        # colors = [(22, 116, 255),
+        #           (13, 152, 171),
+        #           (14, 155, 140),
+        #           (19, 130, 232),
+        #           (19, 126, 254),
+        #           (18, 130, 239)]
+        colors = [(13, 152, 171),
+                  (14, 155, 140)]
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        combined_mask = np.zeros_like(hsv_image[:, :, 0])
+
+        for color in colors:
+            lower_color = np.array(
+                [max(color[0] - tolerance, 0), max(color[1] - tolerance, 0), max(color[2] - tolerance, 0)])
+            upper_color = np.array([min(color[0] + tolerance, 180),
+                                    min(color[1] + tolerance, 255), min(color[2] + tolerance, 255)])
+
+            mask = cv2.inRange(hsv_image, lower_color, upper_color)
+            combined_mask = cv2.bitwise_or(combined_mask, mask)
+
+        masked_image = cv2.bitwise_and(image, image, mask=combined_mask)
+        return masked_image
+
     def convert_to_binary(self, im_gray, threshold=128):
         im_bw = cv2.threshold(im_gray, threshold, 255, cv2.THRESH_BINARY)[1]
         return im_bw
@@ -250,17 +279,30 @@ class AutoEatventure:
         return self.is_bnw_image_template_matching(self.matching_templates_cv2['small_investor_icon'])
 
     def is_having_investor(self):
-        return self.is_investor_image_template_matching(self.matching_templates_cv2['investor'], 0.7)
+        return self.is_investor_image_template_matching(self.matching_templates_cv2['investor'], 0.65)
 
     def get_all_boxes_locations(self):
-        screenshot = self.convert_to_binary(
-            self.current_cv2_sc_grayscale, threshold=160)
-        template = self.convert_to_binary(
-            self.matching_templates_cv2['box']['grayscale'], threshold=160)
+        # screenshot = self.convert_to_binary(
+        #     self.current_cv2_sc_grayscale, threshold=150)
+        # template = self.convert_to_binary(
+        #     self.matching_templates_cv2['box']['grayscale'], threshold=150)
+        screenshot = self.apply_box_mask(self.current_cv2_sc)
+        template = self.apply_box_mask(
+            self.matching_templates_cv2['box']['simple'])
         # hsv_sc = cv2.cvtColor(screenshot, cv2.COLOR_BGR2HSV)
         # hsv_template = cv2.cvtColor(template, cv2.COLOR_BGR2HSV)
         # matched_coordinates = self.find_all_templates(hsv_sc, hsv_template)
-        matched_coordinates = self.find_all_templates(screenshot, template)
+        matched_coordinates = self.find_all_templates(
+            screenshot, template, end=False)
+        if len(matched_coordinates) != 0:
+            return matched_coordinates
+
+        # this is for a little different box
+        template = self.apply_box_mask(
+            self.matching_templates_cv2['box2']['simple'])
+        matched_coordinates = self.find_all_templates(
+            screenshot, template, end=False)
+
         return matched_coordinates
 
     def get_all_better_food_icon_locations(self):
@@ -286,21 +328,23 @@ class AutoEatventure:
         }
         print('Finding investor')
         mc = None
-        if self.is_having_small_investor_icon():
-            sc = self.current_cv2_sc_grayscale
+
+        # for small investor icon
+        sc = self.current_cv2_sc_grayscale
+        if mc:
             template = self.matching_templates_cv2['small_investor_icon']['grayscale']
             mc = self.find_template(sc, template)
             self.click([mc[0]+10, mc[1]+10])
-        elif self.is_having_investor():
+        else:
             sc = self.apply_investor_mask(self.current_cv2_sc)
             template = self.apply_investor_mask(
                 self.matching_templates_cv2['investor']['simple'])
-            mc = self.find_template(sc, template, 0.7)
-            self.click([mc[0]+55, mc[1]+100])
+            mc = self.find_template(sc, template, 0.65)
+            if mc:
+                self.click([mc[0]+55, mc[1]+100])
 
         if mc:
             print('Found investor')
-
             time.sleep(1)
             print('Now claiming')
             self.click(redeem_button_coords)
@@ -350,7 +394,7 @@ class AutoEatventure:
                 time.sleep(5)
                 self.start_app()
                 print('app started')
-                time.sleep(2)
+                time.sleep(5)
         return
 
     def run_ad(self):
@@ -393,7 +437,7 @@ class AutoEatventure:
 
             # hack for better food button
             y_neg_offset = 150
-            dev.click_and_hold(c[0], c[1] - y_neg_offset, 700)
+            dev.click_and_hold(c[0], c[1] - y_neg_offset, 800)
             time.sleep(0.2)
             dev.click(loc.null_click_coords)
             time.sleep(0.2)
@@ -495,15 +539,22 @@ while True:
 
     time.sleep(5)
 
+# dev.run_full_boost_ads()
 
 # MAIN LOGIC
 count = 0
 start_time = time.time()
+pause = False
 while True:
     count += 1
 
     with Timer("Capturing screenshot"):
         dev.capture_screenshot()
+
+    # check for investor
+    if count % 3 == 0:
+        with Timer("Redeem investor"):
+            dev.redeem_investor()
 
     # check for ads
     if count == 1 or count % 100 == 0:  # every 100th iteration
@@ -522,7 +573,7 @@ while True:
             dev.do_upgrades()
             dev.capture_screenshot()
 
-    if count % 2 == 0:
+    if count == 1 or count % 2 == 0:
         with Timer("Finding boxes"):
             # boxes find and click
             print('finding boxes')
@@ -537,15 +588,12 @@ while True:
         with Timer("Clicking food icons"):
             random.shuffle(coords)
             dev.upgrade_food_items(coords)
-
     else:
-        if count % 5 == 0:
+        if count % 10 == 0:
             # next level check
             print('next level check')
             dev.check_to_go_next_level()
-    if count % 3 == 0:
-        with Timer("Redeem investor"):
-            dev.redeem_investor()
+
 
 # collect full boost
 # time.sleep(2)

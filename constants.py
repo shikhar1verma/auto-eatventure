@@ -95,6 +95,6 @@ welcome_city_ok_button_coords = {
 }
 
 null_click_coords = {
-    'x': 1430,
-    'y': 330
+    'x': 1420,
+    'y': 2880
 }
