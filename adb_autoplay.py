@@ -39,6 +39,7 @@ class AutoEatventure:
             'fly_next_city_icon': './matching_screenshots/fly_next_city_icon.png',
             'small_investor_icon': './matching_screenshots/small_investor_icon.png',
             'investor': './matching_screenshots/investor.png',
+            'chest_icon': './matching_screenshots/chest_icon.png',
             'ads_crosses': {
                 'cross1': './matching_screenshots/ads_crosses/cross1.png',
             }
@@ -81,17 +82,21 @@ class AutoEatventure:
         self.device.shell(f"am force-stop {self.package_name}")
         return
 
-    # def capture_screenshot(self):
-    #     pilimg = self.device.screenshot()
-    #     pilimg.save(self.captured_sc_path)
-    #     self.current_cv2_sc = cv2.imread(self.captured_sc_path)
-    #     self.current_cv2_sc_grayscale = cv2.imread(
-    #         self.captured_sc_path, cv2.IMREAD_GRAYSCALE)
-    #     self.current_cv2_sc_bgr2hsv = cv2.cvtColor(
-    #         self.current_cv2_sc, cv2.COLOR_BGR2HSV)
-    #     return
+    def capture_screenshot_on_disk(self):
+        """Capture screenshot and save on disk
+        """
+        pilimg = self.device.screenshot()
+        pilimg.save(self.captured_sc_path)
+        self.current_cv2_sc = cv2.imread(self.captured_sc_path)
+        self.current_cv2_sc_grayscale = cv2.imread(
+            self.captured_sc_path, cv2.IMREAD_GRAYSCALE)
+        self.current_cv2_sc_bgr2hsv = cv2.cvtColor(
+            self.current_cv2_sc, cv2.COLOR_BGR2HSV)
+        return
 
     def capture_screenshot(self):
+        """In memory capture screenshot
+        """
         # pilimg = self.device.screenshot()
         adb_command = f'adb -s {self.device.serial} shell screencap -p'
         output = subprocess.check_output(adb_command.split())
@@ -236,6 +241,18 @@ class AutoEatventure:
         im_bw = cv2.threshold(im_gray, threshold, 255, cv2.THRESH_BINARY)[1]
         return im_bw
 
+    def annotate_points(self, coords):
+        # for annotating points
+        print(len(coords))
+        print('coords', coords)
+        sc = cv2.imread(dev.captured_sc_path)
+        for c in coords:
+            cv2.circle(sc, (c[0], c[1]), radius=10,
+                       color=(0, 0, 255), thickness=-1)
+        cv2.imwrite(
+            './captured_screenshots_on_the_fly/annotated_screenshot.png', sc)
+        return
+
     def is_having_notification(self):
         return self.is_image_template_matching(self.matching_templates_cv2['notification'])
 
@@ -281,6 +298,9 @@ class AutoEatventure:
     def is_having_investor(self):
         return self.is_investor_image_template_matching(self.matching_templates_cv2['investor'], 0.65)
 
+    def is_having_chest_icon(self):
+        return self.is_image_template_matching(self.matching_templates_cv2['chest_icon'])
+
     def get_all_boxes_locations(self):
         # screenshot = self.convert_to_binary(
         #     self.current_cv2_sc_grayscale, threshold=150)
@@ -312,8 +332,15 @@ class AutoEatventure:
         # hsv_template = cv2.cvtColor(template, cv2.COLOR_BGR2HSV)
         # matched_coordinates = self.find_all_templates(hsv_sc, hsv_template)
         matched_coordinates = self.find_all_templates(
-            screenshot, template, end=True)
-        return matched_coordinates
+            screenshot, template, end=False, threshold=0.8)
+
+        safe_matched_coordinates = []
+        danger_y_max = 2690
+        for c in matched_coordinates:
+            if c[1] <= danger_y_max:
+                safe_matched_coordinates.append(c)
+
+        return safe_matched_coordinates
 
     def get_better_food_button(self):
         hsv_sc = self.current_cv2_sc_bgr2hsv
@@ -331,9 +358,9 @@ class AutoEatventure:
 
         # for small investor icon
         sc = self.current_cv2_sc_grayscale
+        template = self.matching_templates_cv2['small_investor_icon']['grayscale']
+        mc = self.find_template(sc, template)
         if mc:
-            template = self.matching_templates_cv2['small_investor_icon']['grayscale']
-            mc = self.find_template(sc, template)
             self.click([mc[0]+10, mc[1]+10])
         else:
             sc = self.apply_investor_mask(self.current_cv2_sc)
@@ -345,7 +372,7 @@ class AutoEatventure:
 
         if mc:
             print('Found investor')
-            time.sleep(1)
+            time.sleep(2)
             print('Now claiming')
             self.click(redeem_button_coords)
             time.sleep(5)
@@ -380,6 +407,10 @@ class AutoEatventure:
         self.device.shell(f"input text '{escaped_text}'")
         return
 
+    def swipe(self, start, end):
+        self.device.swipe(start['x'], start['y'], end['x'], end['y'])
+        return
+
     def run_full_boost_ads(self):
         btn_coords = {
             'x': 720,
@@ -412,52 +443,295 @@ class AutoEatventure:
         time.sleep(1)
         return
 
-    def check_to_go_next_level(self):
-        if dev.is_having_next_level_icon():
-            dev.click(loc.next_level_button_coords)
-            time.sleep(0.2)
-            dev.click(loc.renovate_button_coords)
-            time.sleep(10)
-            dev.click(loc.first_lemonade_stand_open_coords)
-        elif dev.is_having_fly_next_city_icon():
-            dev.click(loc.next_level_button_coords)
-            time.sleep(0.2)
-            dev.click(loc.fly_next_city_button_coords)
-            time.sleep(15)
-            dev.click(loc.welcome_city_ok_button_coords)
-            time.sleep(5)
-            dev.click(loc.first_lemonade_stand_open_coords)
-            time.sleep(5)
+    def open_chests(self):
+        print('Checking for chests')
+        # taking screenshot as state changed.
+        time.sleep(1)
+        self.capture_screenshot()
+        time.sleep(1)
+        if self.is_having_chest_icon():
+            print('Chest found now opening.')
+            # actually icon is clicked to open chest
+            self.click(loc.chest_coords)
+            time.sleep(2)
+            # just opening chest item
+            self.click(loc.chest_coords)
+            time.sleep(1)
+            # just opening chest item
+            self.click(loc.chest_coords)
+            time.sleep(1)
+            # last extra click
+            self.click(loc.chest_coords)
+            time.sleep(1)
+            self.click(loc.close_chest_button_coords)
+            time.sleep(1)
+            self.open_chests()
         return
+
+    def check_to_go_next_level(self):
+        gone_to_next_level = False
+        if self.is_having_next_level_icon():
+            self.click(loc.next_level_button_coords)
+            time.sleep(2)
+            self.click(loc.renovate_button_coords)
+            time.sleep(10)
+            self.click(loc.first_lemonade_stand_open_coords)
+            gone_to_next_level = True
+        elif self.is_having_fly_next_city_icon():
+            self.click(loc.next_level_button_coords)
+            time.sleep(2)
+            self.click(loc.fly_next_city_button_coords)
+            time.sleep(15)
+            self.click(loc.welcome_city_ok_button_coords)
+            time.sleep(5)
+            self.click(loc.first_lemonade_stand_open_coords)
+            time.sleep(5)
+            gone_to_next_level = True
+
+        if gone_to_next_level:
+            with Timer('Time to open chests'):
+                self.open_chests()
+
+        return gone_to_next_level
 
     def upgrade_food_items(self, coords):
         for c in coords[:3]:  # as mostly after 3 no food icon is visible
-            dev.click([c[0], c[1] + 30])
+            self.click([c[0], c[1] + 30])
             time.sleep(0.2)
 
             # hack for better food button
-            y_neg_offset = 150
-            dev.click_and_hold(c[0], c[1] - y_neg_offset, 800)
-            time.sleep(0.2)
-            dev.click(loc.null_click_coords)
+            y_neg_offset = 130
+            x_pos_offset = 20
+            self.click_and_hold(c[0] + x_pos_offset, c[1] - y_neg_offset, 1200)
+            time.sleep(0.4)
+            if c[1] < 1240:  # to avoid null zone overlapping with tooltip
+                self.click([c[0] - 110, c[1] + 30])
+            else:
+                self.click(loc.null_click_coords)
             time.sleep(0.2)
         return
 
     def open_boxes(self):
-        coords = dev.get_all_boxes_locations()
+        coords = self.get_all_boxes_locations()
         for c in coords:
-            dev.click(c)
+            self.click(c)
             time.sleep(0.2)
         return
 
-    def do_upgrades(self):
-        dev.click(loc.upgrade_button_coords)
+    def do_upgrades(self, upgrade_count=10):
+        self.click(loc.upgrade_button_coords)
         time.sleep(0.3)
-        for i in range(5):
-            dev.click(loc.single_upgrade_button_coords)
+        for i in range(upgrade_count):
+            self.click(loc.single_upgrade_button_coords)
             time.sleep(0.2)
-        dev.click(loc.close_upgrade_button_coords)
+        self.click(loc.close_upgrade_button_coords)
         return
+
+    def login_with_cloud(self):
+        # first time login with cloud save
+        time.sleep(1)
+        self.click(loc.settings_coords)
+        time.sleep(1)
+        self.click(loc.cloud_save_coords)
+        time.sleep(1)
+        self.click(loc.email_input_coords)
+        time.sleep(3)
+        self.input_text(os.getenv('EMAIL'))
+        time.sleep(1)
+        self.click(loc.text_ok_button_coords)
+        time.sleep(1)
+        self.click(loc.password_input_coords)
+        time.sleep(3)
+        self.input_text(os.getenv('PASSWORD'))
+        time.sleep(1)
+        self.click(loc.text_ok_button_coords)
+        time.sleep(1)
+        self.click(loc.login_button_coords)
+        time.sleep(8)  # loading cloud save
+        self.click(loc.use_cloud_save_button_coords)
+        time.sleep(8)  # for loading game
+        self.click(loc.close_game_for_restart_button_coords)
+        return
+
+    def start_game_for_first_time(self):
+        # below code is for first time opening game
+        is_notification_closed = False
+        is_first_stand_closed = False
+        while True:
+            print('checking ')
+            self.capture_screenshot()
+            if not is_notification_closed and self.is_having_notification():
+                print('found notification')
+                self.click(loc.close_nofication_coords)
+                is_notification_closed = True
+                continue
+            elif not is_first_stand_closed and self.is_having_first_lemonade_stand_open():
+                print('found first stand')
+                self.click(loc.first_lemonade_stand_open_coords)
+                is_notification_closed = True
+                is_first_stand_closed = True
+                continue
+            elif self.is_having_settings():
+                print('found settings')
+                self.click(loc.settings_coords)
+                is_notification_closed = True
+                is_first_stand_closed = True
+                break
+            time.sleep(5)
+        return
+
+    def init_game(self):
+        """To check if game is in playing state
+        """
+        # INTIALIZATION OF GAME CHECK
+        while True:
+            self.capture_screenshot()
+            if self.is_having_settings():
+                break
+            if self.is_having_offline_earnings():
+                self.click(loc.close_offline_earnings_coords)
+                break
+
+            time.sleep(5)
+        return
+
+    def start_playing_game(self):
+        count = 0
+        # to orient first food icon in better place for faster gameplay
+        new_level_first_food_icon_swipe = False
+        new_level_started = True
+        swipping_pattern = [
+            loc.swipe_layout_down_coords, loc.swipe_layout_down_coords, loc.swipe_layout_down_coords,
+            loc.swipe_layout_up_coords, loc.swipe_layout_up_coords, loc.swipe_layout_up_coords
+        ]
+        swipe_count = 0
+        nothing_to_update_count = 0
+        while True:
+            count += 1
+            if nothing_to_update_count > 50:
+                print('Nothing to update max limit reached. Brute force to resolved this infinity loop.')
+                self.start_app()
+                print('starting app')
+                time.sleep(1)
+                self.click(loc.null_click_coords)
+                time.sleep(1)
+
+            # this logic is to move the layout up and down when not update icons shows
+            print('nothing_to_update_count', nothing_to_update_count)
+            if nothing_to_update_count >= 15 and nothing_to_update_count % 5 == 0:
+                print('swipe count', swipe_count)
+                print('len(swipping_pattern)', len(swipping_pattern))
+                print('swiping pattern index', swipe_count %
+                      len(swipping_pattern))
+                swipping_coords = swipping_pattern[swipe_count % len(
+                    swipping_pattern)]
+                self.swipe(**swipping_coords)
+                print('##############################',
+                      swipe_count, swipping_coords)
+                time.sleep(3)
+                swipe_count += 1
+
+            with Timer("Capturing screenshot"):
+                self.capture_screenshot()
+
+            # check for investor
+            if count % 3 == 0:
+                with Timer("Redeem investor"):
+                    self.redeem_investor()
+
+            # check for ads
+            if count == 1 or count % 100 == 0:  # every 100th iteration
+                with Timer("Running full boost ads"):
+                    print('Checking for boost')
+                    if self.is_having_no_boost_indicator_2x():
+                        print('running ads')
+                        self.run_full_boost_ads()
+                        time.sleep(2)
+
+            # maind upgrades
+            # upgrade click
+            with Timer("Upgrading items"):
+                if count % 5 == 0 and self.is_having_upgrade():
+                    print('Upgrading items')
+                    if new_level_started:
+                        self.do_upgrades(upgrade_count=50)
+                        new_level_started = False
+                    else:
+                        self.do_upgrades()
+                    self.capture_screenshot()
+
+            if count == 1 or count % 2 == 0:
+                with Timer("Finding boxes"):
+                    # boxes find and click
+                    print('finding boxes')
+                    self.open_boxes()
+
+            with Timer("Finding food icons"):
+                # self.capture_screenshot()
+                print('finding food icons')
+                coords = self.get_all_better_food_icon_locations()
+
+            if len(coords) > 0 and not new_level_first_food_icon_swipe:
+                y_coords = [c[1] for c in coords]
+                swipe_x_coords = coords[y_coords.index(min(y_coords))][0]
+                self.swipe(
+                    start={
+                        'y': min(y_coords), 
+                        'x': swipe_x_coords}, 
+                    end={
+                        'x': swipe_x_coords, 
+                        'y': 1300}
+                )
+                new_level_first_food_icon_swipe = True
+                time.sleep(3)
+                # to avoid any infinite scenario
+                self.start_app()
+                print('starting app')
+                time.sleep(3)
+                self.capture_screenshot()
+                continue
+
+            # this if is for fetching the danger food items and adjust layout to avoid them.
+            if len(coords) > 0:
+                nothing_to_update_count = 0
+                is_danger_food_item = False
+                for c in coords:
+                    y = c[1]
+                    if y <= 1100:
+                        is_danger_food_item = True
+                        self.swipe(**loc.swipe_layout_little_up_coords)
+                        time.sleep(3)
+                        # to avoid any infinite scenario
+                        self.start_app()
+                        print('starting app')
+                        time.sleep(1)
+                        break
+                if is_danger_food_item:
+                    self.capture_screenshot()
+                    continue
+
+            if len(coords) == 0:
+                nothing_to_update_count += 1
+            else:
+                nothing_to_update_count = 0
+
+            if len(coords) != 0:
+                # c = random.choice(coords)
+                with Timer("Clicking food icons"):
+                    random.shuffle(coords)
+                    self.upgrade_food_items(coords)
+            else:
+                if count % 10 == 0:
+                    # next level check
+                    print('next level check')
+                    gone_to_next_level = self.check_to_go_next_level()
+                    if gone_to_next_level:
+                        print(
+                            '########################swipe count is next level', swipe_count)
+                        swipe_count = 0
+                        nothing_to_update_count = 0
+                        new_level_first_food_icon_swipe = False
+                        new_level_started = True
 
 
 class Timer:
@@ -472,152 +746,12 @@ class Timer:
         print(f"{self.name} elapsed time: {elapsed_time} seconds\n")
 
 
+# start the game app.
 dev = AutoEatventure()
-
 dev.start_app()
 
-# below code is for first time opening game
-# is_notification_closed = False
-# is_first_stand_closed = False
-# while True:
-#     print('checking ')
-#     dev.capture_screenshot()
-#     if not is_notification_closed and dev.is_having_notification():
-#         print('found notification')
-#         dev.click(close_nofication_coords)
-#         is_notification_closed = True
-#         continue
-#     elif not is_first_stand_closed and dev.is_having_first_lemonade_stand_open():
-#         print('found first stand')
-#         dev.click(first_lemonade_stand_open_coords)
-#         is_notification_closed = True
-#         is_first_stand_closed = True
-#         continue
-#     elif dev.is_having_settings():
-#         print('found settings')
-#         dev.click(settings_coords)
-#         is_notification_closed = True
-#         is_first_stand_closed = True
-#         break
-
-#     time.sleep(5)
-
-# print('Found settings was success')
-
-# first time login with cloud save
-# time.sleep(1)
-# dev.click(settings_coords)
-# time.sleep(1)
-# dev.click(cloud_save_coords)
-# time.sleep(1)
-# dev.click(email_input_coords)
-# time.sleep(3)
-# dev.input_text(os.getenv('EMAIL'))
-# time.sleep(1)
-# dev.click(text_ok_button_coords)
-# time.sleep(1)
-# dev.click(password_input_coords)
-# time.sleep(3)
-# dev.input_text(os.getenv('PASSWORD'))
-# time.sleep(1)
-# dev.click(text_ok_button_coords)
-# time.sleep(1)
-# dev.click(login_button_coords)
-# time.sleep(8) # loading cloud save
-# dev.click(use_cloud_save_button_coords)
-# time.sleep(8) # for loading game
-# dev.click(close_game_for_restart_button_coords)
-
-# INTIALIZATION OF GAME CHECK
-while True:
-    dev.capture_screenshot()
-    if dev.is_having_settings():
-        break
-    if dev.is_having_offline_earnings():
-        dev.click(loc.close_offline_earnings_coords)
-        break
-
-    time.sleep(5)
-
-# dev.run_full_boost_ads()
+# to check if game is playable.
+dev.init_game()
 
 # MAIN LOGIC
-count = 0
-start_time = time.time()
-pause = False
-while True:
-    count += 1
-
-    with Timer("Capturing screenshot"):
-        dev.capture_screenshot()
-
-    # check for investor
-    if count % 3 == 0:
-        with Timer("Redeem investor"):
-            dev.redeem_investor()
-
-    # check for ads
-    if count == 1 or count % 100 == 0:  # every 100th iteration
-        with Timer("Running full boost ads"):
-            print('Checking for boost')
-            if dev.is_having_no_boost_indicator_2x():
-                print('running ads')
-                dev.run_full_boost_ads()
-                time.sleep(2)
-
-    # maind upgrades
-    # upgrade click
-    with Timer("Upgrading items"):
-        if count % 5 == 0 and dev.is_having_upgrade():
-            print('Upgrading items')
-            dev.do_upgrades()
-            dev.capture_screenshot()
-
-    if count == 1 or count % 2 == 0:
-        with Timer("Finding boxes"):
-            # boxes find and click
-            print('finding boxes')
-            dev.open_boxes()
-
-    with Timer("Finding food icons"):
-        # dev.capture_screenshot()
-        print('finding food icons')
-        coords = dev.get_all_better_food_icon_locations()
-    if len(coords) != 0:
-        # c = random.choice(coords)
-        with Timer("Clicking food icons"):
-            random.shuffle(coords)
-            dev.upgrade_food_items(coords)
-    else:
-        if count % 10 == 0:
-            # next level check
-            print('next level check')
-            dev.check_to_go_next_level()
-
-
-# collect full boost
-# time.sleep(2)
-# with Timer("Running full boost ads"):
-#     for i in range(12):
-#         dev.run_ads()
-
-
-# run ads and close it
-# for i in range(30):
-#   if dev.is_having_ad_cross():
-#     btn_coords = dev.get_ad_cross_button()
-#     if btn_coords:
-#       dev.click(btn_coords)
-#       break
-#   time.sleep(5)
-
-# print(dev.is_having_ad_cross())
-
-# for annotating points
-# print(len(coords))
-# print('coords', coords)
-# sc = cv2.imread(dev.captured_sc_path)
-# for c in coords:
-#     cv2.circle(sc, (c[0], c[1]), radius=10,
-#                 color=(0, 0, 255), thickness=-1)
-# cv2.imwrite('./captured_screenshots_on_the_fly/annotated_screenshot.png', sc)
+dev.start_playing_game()

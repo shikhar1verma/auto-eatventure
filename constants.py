@@ -95,6 +95,61 @@ welcome_city_ok_button_coords = {
 }
 
 null_click_coords = {
-    'x': 1420,
-    'y': 2880
+    'x': 810,
+    'y': 320
+}
+
+chest_coords = {
+    'x': 130,
+    'y': 845
+}
+
+close_chest_button_coords = {
+    'x': 1330,
+    'y': 230
+}
+
+
+swipe_layout_down_coords = {
+    'start': {
+        'x': 900,
+        'y': 2500
+    },
+    'end': {
+        'x': 900,
+        'y': 800
+    }
+}
+
+swipe_layout_up_coords = {
+    'end': {
+        'x': 900,
+        'y': 2500
+    },
+    'start': {
+        'x': 900,
+        'y': 800
+    }
+}
+
+swipe_layout_little_up_coords = {
+    'end': {
+        'x': 900,
+        'y': 1500
+    },
+    'start': {
+        'x': 900,
+        'y': 800
+    }
+}
+
+swipe_layout_little_down_coords = {
+    'start': {
+        'x': 900,
+        'y': 1500
+    },
+    'end': {
+        'x': 900,
+        'y': 800
+    }
 }
