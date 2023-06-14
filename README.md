@@ -2,7 +2,7 @@
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://www.linux.org/) 
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/) 
 [![Unity](https://img.shields.io/badge/Unity-100000?style=for-the-badge&logo=unity&logoColor=white)](https://unity.com/) 
-<a href="https://opencv.org/"><img src="https://www.opensourceforu.com/wp-content/uploads/2020/10/Figure-1-Logo-of-OpenCV-350x136.png"  width="10%"></a>
+<a href="https://opencv.org/"><img src="https://www.vectorlogo.zone/logos/opencv/opencv-ar21.png"  width="8%"></a>
 
 # Table of Contents
 1. [Journey & Motivation](#journey--motivation)
