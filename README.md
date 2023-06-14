@@ -1,10 +1,16 @@
+[![Python](https://img.shields.io/badge/Python-14354C?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/) 
+[![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://www.linux.org/) 
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/) 
+[![Unity](https://img.shields.io/badge/Unity-100000?style=for-the-badge&logo=unity&logoColor=white)](https://unity.com/) 
+<a href="https://opencv.org/"><img src="https://www.opensourceforu.com/wp-content/uploads/2020/10/Figure-1-Logo-of-OpenCV-350x136.png"  width="10%"></a>
+
 # Table of Contents
 1. [Journey & Motivation](#journey--motivation)
-2. [Installation](#Installation)
 3. [Tested System Configuration](#tested-system-configuration)
+2. [Installation](#Installation)
+6. [Setup](#setup)
 4. [Documentation](#Documentation)
 5. [Contribution](#Contribution)
-6. [Setup](#setup)
 
 
 ## Journey & Motivation
@@ -139,36 +145,128 @@ Command: `sudo apt-get install android-sdk-platform-tools`
 **For Windows**: https://www.xda-developers.com/install-adb-windows-macos-linux/
 
 
-### Project setup
+## Setup
 
 1. First clone the project.
-2. Then create pytyhon virtual environement.
+    ```
+    git clone https://github.com/shikhar1verma/auto-eatventure.git
+    ```
+2. Then create python virtual environement.
+    
+    a. First go to the folder where you want your virtual python environment. Like some folder named "python-environments".
+    
+    b. Then create the environment.
+    
+    c. Then activate that environment
+    
+    ```
+    # step a
+    cd ~/python-environments/
+
+    # step b (here python environment name is eatventures-env)
+    python -m venv eatventures-env
+
+    # step c 
+    source ~/python-environments/eatventures-env/bin/activate
+
+    # if want to come out from this python enviroment you can run
+    # below command. Right now we don't have to use this command
+    deactivate
+    ```
 3. Then install the required packages through requirements.txt
+    ```
+    # in the project folder run below command to install all python
+    # libraries in you python virtual environment
+    pip install -r requirements.txt
+    ```
 4. Then run emeulator in android studios. With game running.
-5. Now run adb_autoplay.py to run the game.
+    
+    a. Once your nexus emulator is up and running. We need to install the game version 1.6.
+    
+    b. Here is the link of apk file download this apk file or any other apk of this game from any website you wish. I installed from apkpure. It was the first link on google search.
+    https://apkpure.com/eatventure/com.hwqgrhhjfd.idlefastfood/download/10600-APK-933aa331d5e24bf37bfd9dc4b7b974be
+
+    c. The downloaded apk file must be present in Downloads folder. Drag and drop that folder in emulator it will install the game.
+
+    d. Once game is installed then run the game. Login with your account accordingly. If you don't have account you can register to save your progress so that you can play the game in your mobile later.
+
+    e. Once playable screen is opened now we will be run our python script which will do the magic.
+
+5. To autoplay the game just run below command.
+    ```
+    python adb_autoplay.py
+    ```
+    It will run the python script and will interact with the emulator automatically.
+
+    There is one more script autoplay.py that is a failed attempt as I was trying to directly run the game through UI elements.
 
 
-
-pip install python-dotenv
-
-The code provided is a script for automating gameplay actions in a game using Python. Specifically, the game appears to be a food-related game, as inferred from the function names and comments. The game might involve upgrading food items, opening chests, checking for in-game ads, and other similar tasks. The script automates these tasks using a mix of screenshot analysis, template matching, and interacting with the game's interface programmatically.
+## Documentation
 
 Here is a summary of what the classes and functions in the script do:
 
-Timer: This is a context manager class for timing the execution of blocks of code. It is used throughout the script to measure the time taken to complete various tasks.
+**Timer**: This is a context manager class for timing the execution of blocks of code. It is used throughout the script to measure the time taken to complete various tasks.
 
-AutoEatventure: This is the main class that automates the gameplay. Here are the key methods:
+**AutoEatventure**: This is the main class that automates the gameplay. 
 
-click, click_and_hold, input_text, swipe: These methods perform simple actions in the game interface.
+Here are the key methods:
 
-get_better_food_button, get_ad_cross_button, redeem_investor: These methods find specific game elements on the screen and interact with them.
+These methods perform simple actions in the game interface.
+ 1. click
+ 2. click_and_hold
+ 3. input_text
+ 4. swipe: 
+ 
+These methods find specific game elements on the screen and interact with them.
 
-run_full_boost_ads, run_ad: These methods are used to deal with ads in the game.
+1. get_better_food_button 
+2. get_ad_cross_button
+3. redeem_investor 
 
-open_chests, check_to_go_next_level, upgrade_food_items, open_boxes, do_upgrades: These methods handle various aspects of the gameplay, like opening chests, upgrading items, moving to the next level, etc.
+These methods are used to deal with ads in the game.
 
-login_with_cloud, start_game_for_first_time, init_game, start_playing_game: These methods handle the game's start-up process and the main gameplay loop.
+1. run_full_boost_ads
+2. run_ad 
+
+These methods handle various aspects of the gameplay, like opening chests, upgrading items, moving to the next level, etc.
+
+1. open_chests
+2. check_to_go_next_level
+3. upgrade_food_items
+4. open_boxes
+5. do_upgrades 
+
+These methods handle the game's start-up process and the main gameplay loop.
+
+1. login_with_cloud
+2. start_game_for_first_time
+3. init_game
+4. start_playing_game 
 
 The script finishes with some driver code that creates an instance of the AutoEatventure class and starts the game.
 
-Overall, this script appears to automate gameplay for testing or grinding purposes, which might be useful in a game that requires repetitive actions or long periods of playtime. However, keep in mind that the use of such scripts could potentially violate the terms of service of the game. It's always recommended to check the guidelines of the game and respect the developer's rules and policies.
+## Contribution
+
+Any kind of contribution is welcomed. I will be happy if some new person who just started to code tries to contribute.
+
+Though any level of expertise is welcomed.
+
+Steps to contribute:
+
+1. Open an issue: Discuss about the changes or the improvements you want to do.
+
+2. Approval: If the issue you opened will help project in any way then your issue will be approved for create a PR(pull request) otherwise further discussion will take place.
+
+3. Pull request: All the PR will be accepted if its related to an issue. If PR is raised without an issue then PR will be rejected.
+
+4. PR merge: After reviewing the code the PR will be merged else comments will be giving the code to improve the code.
+
+I copied below guidlines from github:
+```
+GitHub:
+“We want people to work better together. Although we maintain the site, this is a community we build together, and we need your help to make it the best it can be… Respect each other…remember to criticize ideas, not people.
+
+Avoid name-calling, ad hominem attacks, responding to a post’s tone instead of its actual content, and knee-jerk contradiction. Instead, provide reasoned counter-arguments that improve the conversation. If you disagree with someone, try to understand and share their feelings before you address them. This will promote a respectful and friendly atmosphere where people feel comfortable asking questions, participating in discussions, and making contributions. Additionally, communicating with strangers on the Internet can be awkward. Try to use clear language, and think about how it will be received by the other person.”
+```
+
+Hope you follow it and help each other in growing.
