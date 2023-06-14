@@ -3,6 +3,8 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/) 
 [![Unity](https://img.shields.io/badge/Unity-100000?style=for-the-badge&logo=unity&logoColor=white)](https://unity.com/) 
 <a href="https://opencv.org/"><img src="https://www.vectorlogo.zone/logos/opencv/opencv-ar21.png"  width="8%"></a>
+<a href="https://developer.android.com/"><img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiKoAufYiAR36mWljxnxgUSxlgyQf7PRyPn3axUZPdDid7Cv7mVEuTCaA0PriHdRLPurGgI4sVFjmB_fMtKBgd6KWu_bDKdqMywm-AL-iOX3c69obt2sqeX5KVQVqkzcE8-xG-28yRDXx7X6-ZaNRIUlYmABYmi_8XfFYuYs5IMPU0gv9EbyutqDAfk/s1600/Android%20Studio%20-%20Header.png"  width="14%"></a>
+
 
 # Table of Contents
 1. [Journey & Motivation](#journey--motivation)
