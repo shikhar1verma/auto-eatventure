@@ -7,12 +7,20 @@
 
 
 # Table of Contents
-1. [Journey & Motivation](#journey--motivation)
+1. [Demo](#demo)
+2. [Journey & Motivation](#journey--motivation)
 3. [Tested System Configuration](#tested-system-configuration)
-2. [Installation](#Installation)
-6. [Setup](#setup)
-4. [Documentation](#Documentation)
-5. [Contribution](#Contribution)
+4. [Installation](#Installation)
+5. [Setup](#setup)
+6. [Documentation](#Documentation)
+7. [Contribution](#Contribution)
+
+
+## Demo
+
+![Demo](https://user-images.githubusercontent.com/25281268/247642441-e9009b93-9bdc-499a-9400-0dc0380a9859.gif)
+
+Full demo: YT link
 
 
 ## Journey & Motivation
