@@ -20,7 +20,7 @@
 
 ![Demo](https://user-images.githubusercontent.com/25281268/247642441-e9009b93-9bdc-499a-9400-0dc0380a9859.gif)
 
-Full demo: YT link
+Full demo: https://youtu.be/RTGBIerwbKE
 
 
 ## Journey & Motivation
