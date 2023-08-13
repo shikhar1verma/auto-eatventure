@@ -252,6 +252,42 @@ class AutoEatventure:
         cv2.imwrite(
             './captured_screenshots_on_the_fly/annotated_screenshot.png', sc)
         return
+    
+    def is_pixel_color_present_between_coordinates(self, start_coords, end_coords, color_to_check):
+        """this function check if in image two coordinates in img having some color or not.
+
+        Args:
+            start_coords (dict): {x: 1, y: 22} Dictionary of x and y coordinates of a points. 
+            end_coords (dict): {x: 1, y: 22} Dictionary of x and y coordinates of a points.
+            color_to_check (list): [1, 3 , 4] RGB/BGR color that needs to be checked. 
+        """
+        # Get the coordinates of the points on the line between (x1, y1) and (x2, y2)
+        line_points = []
+        x1, y1 = start_coords['x'], start_coords['y']
+        x2, y2 = end_coords['x'], end_coords['y']
+        dx = x2 - x1
+        dy = y2 - y1
+        steps = max(abs(dx), abs(dy))
+        x_increment = dx / steps
+        y_increment = dy / steps
+
+        for i in range(steps + 1):
+            x = int(x1 + i * x_increment)
+            y = int(y1 + i * y_increment)
+            line_points.append((x, y))
+
+        # Check if the specified color is present in the pixels along the line
+        color_present = False
+
+        for x, y in line_points:
+            pixel_color = self.current_cv2_sc[y, x]
+            if all(pixel_color == color_to_check):
+                color_present = True
+                break
+
+        return color_present
+
+
 
     def is_having_notification(self):
         return self.is_image_template_matching(self.matching_templates_cv2['notification'])
@@ -285,6 +321,16 @@ class AutoEatventure:
 
     def is_having_ad_cross(self):
         return self.is_image_template_matching(self.matching_templates_cv2['ads_crosses']['cross1'])
+
+    def is_having_no_boost_indicator(self):
+        x1, y1 = 408, 274
+        x2, y2 = 466, 274
+        start = {'x': x1, 'y': y1}
+        end = {'x': x2, 'y': y2}
+        color_to_check = [42, 192, 255]
+        # here we checking if yellow color is present in pixels where boost x2 is written
+        # if yellow color not present it means is having no boost indicator
+        return not self.is_pixel_color_present_between_coordinates(start, end, color_to_check)
 
     def is_having_no_boost_indicator_2x(self):
         return self.is_image_template_matching(self.matching_templates_cv2['no_boost_indicator_2x'], 0.92)
@@ -643,10 +689,17 @@ class AutoEatventure:
             if count == 1 or count % 100 == 0:  # every 100th iteration
                 with Timer("Running full boost ads"):
                     print('Checking for boost')
-                    if self.is_having_no_boost_indicator_2x():
+                    if self.is_having_no_boost_indicator(): # this is for users didn't buy 2x permanent boost
                         print('running ads')
                         self.run_full_boost_ads()
                         time.sleep(2)
+                    
+                    # a quick fix for boost but will run multiple times in many scenarios
+                    if self.is_having_no_boost_indicator_2x():
+                        print('running ads for 2x users')
+                        self.run_full_boost_ads()
+                        time.sleep(2)
+
 
             # maind upgrades
             # upgrade click
