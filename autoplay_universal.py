@@ -13,6 +13,11 @@ Usage:
 
     # Or set in .env file:
     # PLATFORM=ios
+
+Kill Switch:
+    - Press ESC key to stop
+    - Move mouse to top-left corner (pyautogui failsafe)
+    - Ctrl+C in terminal
 """
 
 import cv2
@@ -21,10 +26,45 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 import random
 import os
+import threading
 from PIL import Image
 
 from config import Config, Platform, get_config
 from device_driver import DeviceDriver
+
+# Global stop flag for kill switch
+_stop_requested = False
+_keyboard_listener = None
+
+def _setup_kill_switch():
+    """Setup ESC key listener to stop automation."""
+    global _keyboard_listener
+    try:
+        from pynput import keyboard
+
+        def on_press(key):
+            global _stop_requested
+            if key == keyboard.Key.esc:
+                print("\n[KILL SWITCH] ESC pressed - stopping automation...")
+                _stop_requested = True
+                return False  # Stop listener
+
+        _keyboard_listener = keyboard.Listener(on_press=on_press)
+        _keyboard_listener.start()
+        print("[KILL SWITCH] Press ESC to stop, or move mouse to top-left corner")
+        return True
+    except ImportError:
+        print("[WARN] pynput not installed - ESC kill switch disabled")
+        print("       Install with: pip install pynput")
+        print("       You can still use Ctrl+C or move mouse to top-left corner")
+        return False
+
+def _stop_kill_switch():
+    """Stop the keyboard listener."""
+    global _keyboard_listener
+    if _keyboard_listener:
+        _keyboard_listener.stop()
+        _keyboard_listener = None
 
 
 class AutoEatventure:
@@ -280,7 +320,7 @@ class AutoEatventure:
         print(f"[MATCH-ALL] Found {len(scaled_centroids)} matches")
         return scaled_centroids
 
-    def is_image_template_matching(self, template_cv_imgs: dict, threshold=0.8):
+    def is_image_template_matching(self, template_cv_imgs: dict, threshold=0.85):
         """Check if template matches in current screenshot."""
         if not template_cv_imgs:
             return False
@@ -530,8 +570,9 @@ class AutoEatventure:
             return []
 
         template = food_icon['grayscale']
+        # Higher threshold (0.85) for laptop screens to avoid false positives
         matched_coordinates = self.find_all_templates(
-            screenshot, template, end=False, threshold=0.75)
+            screenshot, template, end=False, threshold=0.85)
 
         # Get danger zones from constants
         danger_y_max = getattr(self.loc, 'DANGER_Y_MAX', 2690)
@@ -809,8 +850,24 @@ class AutoEatventure:
             time.sleep(5)
         return
 
+    def dismiss_popups(self):
+        """Try to dismiss any popups by clicking X buttons or null area."""
+        # Click null area to dismiss simple popups
+        self.click(self.loc.null_click_coords)
+
+        # Check for ad cross buttons
+        if self.is_having_ad_cross():
+            cross_loc = self.get_ad_cross_button()
+            if cross_loc:
+                print("[POPUP] Dismissing ad/popup X button")
+                self.click([cross_loc[0] + 15, cross_loc[1] + 15])
+                time.sleep(0.5)
+                self.click(self.loc.null_click_coords)
+
     def start_playing_game(self):
         """Main game automation loop."""
+        global _stop_requested
+
         count = 0
         new_level_first_food_icon_swipe = False
         new_level_started = True
@@ -823,8 +880,13 @@ class AutoEatventure:
         swipe_count = 0
         nothing_to_update_count = 0
 
-        while True:
+        while not _stop_requested:
             count += 1
+
+            # Check stop flag at start of each iteration
+            if _stop_requested:
+                print("[STOP] Stop requested - exiting main loop")
+                break
             if nothing_to_update_count > 50:
                 print('Nothing to update max limit reached. Brute force to resolve.')
                 self.start_app()
@@ -938,6 +1000,12 @@ class AutoEatventure:
                         new_level_first_food_icon_swipe = False
                         new_level_started = True
 
+            # End of cycle: try to dismiss any unexpected popups
+            if count % 3 == 0:
+                self.dismiss_popups()
+
+        print("[STOP] Main loop ended")
+
     def cleanup(self):
         """Clean up resources."""
         if self.driver:
@@ -960,8 +1028,13 @@ class Timer:
 
 def main():
     """Main entry point."""
+    global _stop_requested
+
     config = get_config()
     print(f"Starting Auto-Eatventure for {config.platform.value}")
+
+    # Setup kill switch
+    _setup_kill_switch()
 
     dev = None
     try:
@@ -970,13 +1043,19 @@ def main():
         dev.init_game()
         dev.start_playing_game()
     except KeyboardInterrupt:
-        print("\nStopping automation...")
+        print("\n[STOP] Ctrl+C pressed - stopping automation...")
+        _stop_requested = True
     except Exception as e:
-        print(f"Error: {e}")
-        raise
+        if "FailSafeException" in str(type(e).__name__):
+            print("\n[KILL SWITCH] Mouse moved to corner - stopping automation...")
+        else:
+            print(f"Error: {e}")
+            raise
     finally:
+        _stop_kill_switch()
         if dev:
             dev.cleanup()
+        print("Automation stopped.")
 
 
 if __name__ == "__main__":

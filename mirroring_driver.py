@@ -78,8 +78,8 @@ class MirroringDriver(DeviceDriver):
         self._window_id = None
         self._content_offset = (0, 0)  # Offset for window chrome
 
-        # Disable pyautogui fail-safe and minimize delay
-        pyautogui.FAILSAFE = False
+        # Enable pyautogui fail-safe (move mouse to top-left corner to stop)
+        pyautogui.FAILSAFE = True
         pyautogui.PAUSE = 0.0  # No delay between pyautogui calls!
 
     def connect(self) -> bool:
@@ -234,8 +234,10 @@ class MirroringDriver(DeviceDriver):
         # Scale pixel coords to window coords
         screen_x, screen_y = self._to_screen_coords(x, y)
 
-        # Click instantly - no activation delay needed
-        pyautogui.click(screen_x, screen_y)
+        # Move first, then click to prevent accidental drag/scroll
+        pyautogui.moveTo(screen_x, screen_y)
+        time.sleep(0.02)  # Small pause to ensure position is stable
+        pyautogui.click(button='left', clicks=1, _pause=False)
 
     def tap_and_hold(self, x: int, y: int, duration_ms: int = 1000) -> None:
         """Long press at coordinates."""
