@@ -28,6 +28,10 @@ from device_driver import DeviceDriver
 
 
 class AutoEatventure:
+    # Target resolution that templates and constants are designed for
+    TARGET_WIDTH = 1179
+    TARGET_HEIGHT = 2556
+
     def __init__(self, config: Config = None):
         self.config = config or get_config()
         self.loc = self.config.get_constants_module()
@@ -40,26 +44,32 @@ class AutoEatventure:
             raise RuntimeError(f"Failed to connect to {self.config.platform.value} device")
 
         self.package_name = self.config.get_app_identifier()
+
+        # Scale factor for templates (updated when screenshot is captured)
+        self._scale_factor = 1.0
+        self._current_screenshot_size = (self.TARGET_WIDTH, self.TARGET_HEIGHT)
         self.notification_message = 'Allow Eatventure to send you notifications?'
         self.captured_sc_path = './captured_screenshots_on_the_fly/screenshot.png'
         self.current_cv2_sc = None
         self.current_cv2_sc_grayscale = None
         self.current_cv2_sc_bgr2hsv = None
 
-        # Template paths - iOS uses different folder
+        # Template paths - iOS and Mirroring use iOS templates folder
         template_folder = './matching_screenshots'
-        if self.config.platform == Platform.IOS:
+        if self.config.platform in (Platform.IOS, Platform.MIRRORING):
             ios_folder = './matching_screenshots_ios'
             if os.path.exists(ios_folder):
                 template_folder = ios_folder
+                print(f"Using iOS templates from: {ios_folder}")
             else:
                 print(f"Warning: iOS template folder not found at {ios_folder}")
                 print("Using Android templates - you should create iOS-specific templates")
 
-        # iOS-specific settings
-        self.skip_ads = self.config.platform == Platform.IOS  # Skip ads on iOS
-        self.skip_notifications = self.config.platform == Platform.IOS  # iOS handles separately
-        self.skip_offline_earnings = self.config.platform == Platform.IOS
+        # iOS/Mirroring-specific settings
+        is_ios_platform = self.config.platform in (Platform.IOS, Platform.MIRRORING)
+        self.skip_ads = is_ios_platform  # Skip ads on iOS/Mirroring
+        self.skip_notifications = is_ios_platform  # iOS handles separately
+        self.skip_offline_earnings = is_ios_platform
 
         self.matching_screenshots_path = {
             'settings': self._find_template(template_folder, 'settings'),
@@ -147,6 +157,16 @@ class AutoEatventure:
     def capture_screenshot(self):
         """Capture screenshot in memory."""
         pil_image = self.driver.screenshot()
+        self._current_screenshot_size = pil_image.size
+
+        # Calculate scale factor if screenshot is smaller than target
+        # This happens with mirroring mode where window is smaller than iPhone resolution
+        width, height = pil_image.size
+        if width != self.TARGET_WIDTH or height != self.TARGET_HEIGHT:
+            self._scale_factor = width / self.TARGET_WIDTH
+            print(f"[DEBUG] Screenshot {width}x{height}, scale factor: {self._scale_factor:.3f}")
+        else:
+            self._scale_factor = 1.0
 
         # Convert PIL image to numpy array (OpenCV format)
         open_cv_image = np.array(pil_image)
@@ -159,26 +179,69 @@ class AutoEatventure:
             open_cv_image, cv2.COLOR_BGR2HSV)
         return
 
+    def _scale_template(self, template):
+        """Scale template to match current screenshot size."""
+        if self._scale_factor == 1.0:
+            return template
+
+        # Calculate new dimensions
+        h, w = template.shape[:2]
+        new_w = max(1, int(w * self._scale_factor))
+        new_h = max(1, int(h * self._scale_factor))
+
+        # Scale down the template
+        return cv2.resize(template, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+    def _scale_coords_to_target(self, x, y):
+        """Scale coordinates from screenshot space to target resolution (1179x2556)."""
+        if self._scale_factor == 1.0:
+            return (x, y)
+        return (int(x / self._scale_factor), int(y / self._scale_factor))
+
     def find_template(self, image, template, threshold=0.8):
         """Find a single template match in the image."""
-        result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
+        # Scale template to match screenshot resolution
+        scaled_template = self._scale_template(template)
+
+        # Ensure template fits in image
+        if scaled_template.shape[0] > image.shape[0] or scaled_template.shape[1] > image.shape[1]:
+            print(f"[WARN] Template too large for image: {scaled_template.shape} vs {image.shape}")
+            return None
+
+        result = cv2.matchTemplate(image, scaled_template, cv2.TM_CCOEFF_NORMED)
         matches = cv2.minMaxLoc(result)
-        print(matches)
         _, max_val, _, max_loc = matches
 
+        # Debug output (less verbose)
+        if max_val > threshold - 0.2:
+            print(f"[MATCH] score={max_val:.3f} threshold={threshold}")
+
         if max_val > threshold:
-            return max_loc
+            # Scale coordinates back to target resolution
+            return self._scale_coords_to_target(max_loc[0], max_loc[1])
         return None
 
     def find_all_templates(self, image, template, end=False, threshold=0.8):
         """Find all template matches using DBSCAN clustering."""
-        if len(template.shape[::-1]) == 2:
-            template_width, template_height = template.shape[::-1]
+        # Scale template to match screenshot resolution
+        scaled_template = self._scale_template(template)
+
+        # Ensure template fits in image
+        if scaled_template.shape[0] > image.shape[0] or scaled_template.shape[1] > image.shape[1]:
+            print(f"[WARN] Template too large for image")
+            return []
+
+        if len(scaled_template.shape[::-1]) == 2:
+            template_width, template_height = scaled_template.shape[::-1]
         else:
-            template_width, template_height = template.shape[::-1][1:]
-        result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
+            template_width, template_height = scaled_template.shape[::-1][1:]
+
+        result = cv2.matchTemplate(image, scaled_template, cv2.TM_CCOEFF_NORMED)
         m = cv2.minMaxLoc(result)
-        print(m)
+        _, max_val, _, _ = m
+        if max_val > threshold - 0.2:
+            print(f"[MATCH-ALL] best_score={max_val:.3f} threshold={threshold}")
+
         locations = np.where(result >= threshold)
 
         coordinates = []
@@ -194,7 +257,11 @@ class AutoEatventure:
         coords = np.array(coordinates)
         if len(coords) == 0:
             return []
-        dbscan = DBSCAN(eps=10, min_samples=5)
+
+        # Scale DBSCAN eps parameter based on scale factor
+        eps = max(3, int(10 * self._scale_factor))
+        min_samples = max(2, int(5 * self._scale_factor))
+        dbscan = DBSCAN(eps=eps, min_samples=min_samples)
         dbscan.fit(coords)
 
         centroids = []
@@ -204,8 +271,14 @@ class AutoEatventure:
                 centroid = np.mean(cluster_coords, axis=0)
                 centroids.append(centroid)
 
-        centroids = [c.astype(int).tolist() for c in centroids]
-        return centroids
+        # Scale coordinates back to target resolution (1179x2556)
+        scaled_centroids = []
+        for c in centroids:
+            scaled_x, scaled_y = self._scale_coords_to_target(int(c[0]), int(c[1]))
+            scaled_centroids.append([scaled_x, scaled_y])
+
+        print(f"[MATCH-ALL] Found {len(scaled_centroids)} matches")
+        return scaled_centroids
 
     def is_image_template_matching(self, template_cv_imgs: dict, threshold=0.8):
         """Check if template matches in current screenshot."""
@@ -311,12 +384,20 @@ class AutoEatventure:
             './captured_screenshots_on_the_fly/annotated_screenshot.png', sc)
         return
 
+    def _scale_coords_from_target(self, x, y):
+        """Scale coordinates from target resolution (1179x2556) to screenshot space."""
+        if self._scale_factor == 1.0:
+            return (x, y)
+        return (int(x * self._scale_factor), int(y * self._scale_factor))
+
     def is_pixel_color_present_between_coordinates(self, start_coords, end_coords,
                                                     color_to_check):
         """Check if a specific color is present along a line between two points."""
+        # Scale coordinates from target resolution to screenshot space
+        x1, y1 = self._scale_coords_from_target(start_coords['x'], start_coords['y'])
+        x2, y2 = self._scale_coords_from_target(end_coords['x'], end_coords['y'])
+
         line_points = []
-        x1, y1 = start_coords['x'], start_coords['y']
-        x2, y2 = end_coords['x'], end_coords['y']
         dx = x2 - x1
         dy = y2 - y1
         steps = max(abs(dx), abs(dy))

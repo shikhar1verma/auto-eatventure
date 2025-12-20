@@ -125,7 +125,7 @@ class MirroringDriver(DeviceDriver):
                 if search_name.lower() in name.lower() or \
                    search_name.lower() in owner.lower():
                     bounds = window.get('kCGWindowBounds', {})
-                    self._window_bounds = (
+                    new_bounds = (
                         int(bounds.get('X', 0)),
                         int(bounds.get('Y', 0)),
                         int(bounds.get('Width', 0)),
@@ -134,8 +134,11 @@ class MirroringDriver(DeviceDriver):
                     self._window_id = window.get('kCGWindowNumber')
 
                     # Must be a reasonable size
-                    if self._window_bounds[2] > 100 and self._window_bounds[3] > 200:
-                        print(f"Found window: {owner} - {name}")
+                    if new_bounds[2] > 100 and new_bounds[3] > 200:
+                        # Only print if window changed
+                        if self._window_bounds != new_bounds:
+                            print(f"Window: {new_bounds[2]}x{new_bounds[3]} at ({new_bounds[0]}, {new_bounds[1]})")
+                        self._window_bounds = new_bounds
                         return True
 
         # Debug: list all windows
@@ -155,12 +158,17 @@ class MirroringDriver(DeviceDriver):
         self._window_id = None
         print("Disconnected from iPhone Mirroring")
 
-    # Target resolution for screenshots (iPhone 14 Pro)
+    # Target resolution for coordinates (iPhone 14 Pro)
+    # Templates and constants use this resolution
     TARGET_WIDTH = 1179
     TARGET_HEIGHT = 2556
 
     def screenshot(self) -> Image.Image:
-        """Capture screenshot of the mirrored iPhone screen, scaled to iPhone resolution."""
+        """Capture screenshot of the mirrored iPhone screen at native window resolution.
+
+        Note: Returns native window size (not upscaled). The automation script
+        should scale templates down to match, then scale coordinates back up.
+        """
         if not self._connected:
             raise RuntimeError("Not connected")
 
@@ -207,13 +215,9 @@ class MirroringDriver(DeviceDriver):
             pil_image = pyautogui.screenshot(region=(x, y, width, height))
             pil_image = pil_image.convert('RGB')
 
-        # Scale to iPhone resolution so coordinates match constants_ios.py
-        if pil_image.size != (self.TARGET_WIDTH, self.TARGET_HEIGHT):
-            pil_image = pil_image.resize(
-                (self.TARGET_WIDTH, self.TARGET_HEIGHT),
-                Image.Resampling.LANCZOS
-            )
-
+        # DON'T upscale - return native window size for better template matching
+        # Upscaling creates blur that breaks template matching
+        # The automation script will scale templates/coordinates as needed
         return pil_image
 
     def tap(self, x: int, y: int) -> None:
