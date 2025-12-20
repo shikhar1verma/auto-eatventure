@@ -244,7 +244,7 @@ DANGER_Y_MIN = 600
 # ============================================================
 
 # Time to wait after clicking (seconds)
-CLICK_DELAY = 0.2
+CLICK_DELAY = 0.08
 
 # Time to wait for app to launch (seconds)
 APP_LAUNCH_DELAY = 2.0
@@ -253,4 +253,4 @@ APP_LAUNCH_DELAY = 2.0
 STATE_CHANGE_DELAY = 1.0
 
 # Long press duration (milliseconds)
-LONG_PRESS_DURATION = 1200
+LONG_PRESS_DURATION = 800

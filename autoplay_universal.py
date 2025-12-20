@@ -632,19 +632,19 @@ class AutoEatventure:
         """Upgrade food items at given coordinates."""
         for c in coords[:3]:
             self.click([c[0], c[1] + 30])
-            time.sleep(0.2)
+            time.sleep(0.1)
 
             y_neg_offset = 130
             x_pos_offset = 20
-            self.click_and_hold(c[0] + x_pos_offset, c[1] - y_neg_offset, 1200)
-            time.sleep(0.4)
+            self.click_and_hold(c[0] + x_pos_offset, c[1] - y_neg_offset, 800)
+            time.sleep(0.15)
 
             danger_y_min = getattr(self.loc, 'DANGER_Y_MIN', 1240)
             if c[1] < danger_y_min:
                 self.click([c[0] - 110, c[1] + 30])
             else:
                 self.click(self.loc.null_click_coords)
-            time.sleep(0.2)
+            time.sleep(0.1)
         return
 
     def open_boxes(self):
@@ -652,16 +652,16 @@ class AutoEatventure:
         coords = self.get_all_boxes_locations()
         for c in coords:
             self.click(c)
-            time.sleep(0.2)
+            time.sleep(0.1)
         return
 
     def do_upgrades(self, upgrade_count=10):
         """Open upgrade menu and do upgrades."""
         self.click(self.loc.upgrade_button_coords)
-        time.sleep(0.3)
+        time.sleep(0.15)
         for i in range(upgrade_count):
             self.click(self.loc.single_upgrade_button_coords)
-            time.sleep(0.2)
+            time.sleep(0.08)
         self.click(self.loc.close_upgrade_button_coords)
         return
 

@@ -36,8 +36,8 @@ class IOSDriver(DeviceDriver):
     # Scale factor for converting pixels to points (iPhone 14 Pro = 3x)
     SCALE_FACTOR = 3.0
 
-    # Debug mode - saves screenshots with tap markers
-    DEBUG_TAPS = os.getenv("DEBUG_TAPS", "true").lower() == "true"
+    # Debug mode - saves screenshots with tap markers (disable for speed)
+    DEBUG_TAPS = os.getenv("DEBUG_TAPS", "false").lower() == "true"
     DEBUG_DIR = "debug_taps"
 
     def __init__(
