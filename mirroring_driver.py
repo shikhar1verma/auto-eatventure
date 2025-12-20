@@ -155,8 +155,12 @@ class MirroringDriver(DeviceDriver):
         self._window_id = None
         print("Disconnected from iPhone Mirroring")
 
+    # Target resolution for screenshots (iPhone 14 Pro)
+    TARGET_WIDTH = 1179
+    TARGET_HEIGHT = 2556
+
     def screenshot(self) -> Image.Image:
-        """Capture screenshot of the mirrored iPhone screen."""
+        """Capture screenshot of the mirrored iPhone screen, scaled to iPhone resolution."""
         if not self._connected:
             raise RuntimeError("Not connected")
 
@@ -167,6 +171,7 @@ class MirroringDriver(DeviceDriver):
             raise RuntimeError("Window not found")
 
         x, y, width, height = self._window_bounds
+        pil_image = None
 
         if QUARTZ_AVAILABLE and self._window_id:
             try:
@@ -193,13 +198,23 @@ class MirroringDriver(DeviceDriver):
                         bytes_per_row,
                         1
                     )
-                    return pil_image.convert('RGB')
+                    pil_image = pil_image.convert('RGB')
             except Exception as e:
                 print(f"Quartz screenshot failed: {e}")
 
-        # Fallback
-        screenshot = pyautogui.screenshot(region=(x, y, width, height))
-        return screenshot.convert('RGB')
+        # Fallback to pyautogui
+        if pil_image is None:
+            pil_image = pyautogui.screenshot(region=(x, y, width, height))
+            pil_image = pil_image.convert('RGB')
+
+        # Scale to iPhone resolution so coordinates match constants_ios.py
+        if pil_image.size != (self.TARGET_WIDTH, self.TARGET_HEIGHT):
+            pil_image = pil_image.resize(
+                (self.TARGET_WIDTH, self.TARGET_HEIGHT),
+                Image.Resampling.LANCZOS
+            )
+
+        return pil_image
 
     def tap(self, x: int, y: int) -> None:
         """Tap at pixel coordinates (auto-scales to window)."""
@@ -300,20 +315,20 @@ class MirroringDriver(DeviceDriver):
         return (0, 0)
 
     def _to_screen_coords(self, x: int, y: int) -> Tuple[int, int]:
-        """Convert pixel coordinates to screen coordinates."""
+        """Convert iPhone pixel coordinates to Mac screen coordinates."""
         if not self._window_bounds:
             return (x, y)
 
         win_x, win_y, win_w, win_h = self._window_bounds
 
-        # Scale from iPhone pixels to window pixels
-        # iPhone 14 Pro: 1179x2556 pixels, window might be smaller
-        scale_x = win_w / 1179.0  # Assuming iPhone 14 Pro width
-        scale_y = win_h / 2556.0  # Assuming iPhone 14 Pro height
+        # Scale from iPhone resolution (1179x2556) to window size
+        scale_x = win_w / float(self.TARGET_WIDTH)
+        scale_y = win_h / float(self.TARGET_HEIGHT)
 
         scaled_x = int(x * scale_x)
         scaled_y = int(y * scale_y)
 
+        # Add window offset to get Mac screen coordinates
         screen_x = win_x + scaled_x
         screen_y = win_y + scaled_y
 
