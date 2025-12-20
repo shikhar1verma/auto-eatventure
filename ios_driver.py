@@ -184,6 +184,8 @@ class IOSDriver(DeviceDriver):
         point_x = int(x / self._scale_factor)
         point_y = int(y / self._scale_factor) + self.TAP_Y_OFFSET
 
+        print(f"[TAP] pixel({x}, {y}) → point({point_x}, {point_y})")
+
         # Use W3C Actions for precise tap
         self._driver.tap([(point_x, point_y)])
 
