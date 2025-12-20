@@ -34,27 +34,34 @@ from device_driver import DeviceDriver
 
 # Global stop flag for kill switch
 _stop_requested = False
+_paused = False
 _keyboard_listener = None
 
 def _setup_kill_switch():
-    """Setup ESC key listener to stop automation."""
+    """Setup ESC key listener to stop automation, P to pause."""
     global _keyboard_listener
     try:
         from pynput import keyboard
 
         def on_press(key):
-            global _stop_requested
+            global _stop_requested, _paused
             if key == keyboard.Key.esc:
                 print("\n[KILL SWITCH] ESC pressed - stopping automation...")
                 _stop_requested = True
                 return False  # Stop listener
+            elif hasattr(key, 'char') and key.char == 'p':
+                _paused = not _paused
+                if _paused:
+                    print("\n[PAUSED] Press P to resume...")
+                else:
+                    print("\n[RESUMED] Continuing automation...")
 
         _keyboard_listener = keyboard.Listener(on_press=on_press)
         _keyboard_listener.start()
-        print("[KILL SWITCH] Press ESC to stop, or move mouse to top-left corner")
+        print("[KILL SWITCH] ESC=stop, P=pause/resume, or move mouse to top-left corner")
         return True
     except ImportError:
-        print("[WARN] pynput not installed - ESC kill switch disabled")
+        print("[WARN] pynput not installed - ESC/pause disabled")
         print("       Install with: pip install pynput")
         print("       You can still use Ctrl+C or move mouse to top-left corner")
         return False
@@ -881,6 +888,10 @@ class AutoEatventure:
         nothing_to_update_count = 0
 
         while not _stop_requested:
+            # Check pause state
+            while _paused and not _stop_requested:
+                time.sleep(0.5)
+
             count += 1
 
             # Check stop flag at start of each iteration

@@ -234,10 +234,19 @@ class MirroringDriver(DeviceDriver):
         # Scale pixel coords to window coords
         screen_x, screen_y = self._to_screen_coords(x, y)
 
-        # Move first, then click to prevent accidental drag/scroll
+        # Bounds check - ensure click is within window
+        win_x, win_y, win_w, win_h = self._window_bounds
+        if not (win_x <= screen_x <= win_x + win_w and win_y <= screen_y <= win_y + win_h):
+            print(f"[WARN] Click ({screen_x}, {screen_y}) outside window bounds, skipping")
+            return
+
+        # Move first, pause, then explicit down/up to prevent scroll
         pyautogui.moveTo(screen_x, screen_y)
-        time.sleep(0.02)  # Small pause to ensure position is stable
-        pyautogui.click(button='left', clicks=1, _pause=False)
+        time.sleep(0.03)  # Pause to ensure position is stable
+        # Use explicit mouseDown/Up instead of click to prevent any drag
+        pyautogui.mouseDown(button='left')
+        time.sleep(0.01)  # Very short press
+        pyautogui.mouseUp(button='left')
 
     def tap_and_hold(self, x: int, y: int, duration_ms: int = 1000) -> None:
         """Long press at coordinates."""
@@ -250,10 +259,17 @@ class MirroringDriver(DeviceDriver):
 
         screen_x, screen_y = self._to_screen_coords(x, y)
 
+        # Bounds check
+        win_x, win_y, win_w, win_h = self._window_bounds
+        if not (win_x <= screen_x <= win_x + win_w and win_y <= screen_y <= win_y + win_h):
+            print(f"[WARN] Long press ({screen_x}, {screen_y}) outside window bounds, skipping")
+            return
+
         pyautogui.moveTo(screen_x, screen_y)
-        pyautogui.mouseDown()
+        time.sleep(0.03)  # Pause to ensure position
+        pyautogui.mouseDown(button='left')
         time.sleep(duration_ms / 1000.0)
-        pyautogui.mouseUp()
+        pyautogui.mouseUp(button='left')
 
     def swipe(self, start_x: int, start_y: int, end_x: int, end_y: int,
               duration_ms: int = 500) -> None:
