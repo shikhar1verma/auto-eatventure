@@ -198,22 +198,23 @@ swipe_layout_little_down_coords = {
 # ============================================================
 
 # Investor detection colors (HSV format)
-# Original Android values - UPDATE THESE
+# Calibrated for iOS - skin tones of character
 INVESTOR_COLORS_HSV = [
-    (26, 80, 105),
-    (25, 94, 119),
-    (26, 108, 139),
-    (26, 110, 135)
+    (15, 120, 200),   # Light skin tone
+    (18, 100, 220),
+    (20, 90, 200),
+    (22, 110, 210)
 ]
-INVESTOR_COLOR_TOLERANCE = 15
+INVESTOR_COLOR_TOLERANCE = 20
 
 # Box detection colors (HSV format)
-# Original Android values - UPDATE THESE
+# Calibrated for iOS - cardboard brown
 BOX_COLORS_HSV = [
-    (13, 152, 171),
-    (14, 155, 140)
+    (15, 140, 180),
+    (18, 150, 160),
+    (12, 130, 170)
 ]
-BOX_COLOR_TOLERANCE = 2
+BOX_COLOR_TOLERANCE = 10
 
 # Boost indicator yellow color (BGR format)
 # Used to detect if boost is active

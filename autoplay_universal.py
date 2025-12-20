@@ -450,17 +450,16 @@ class AutoEatventure:
 
         template = food_icon['grayscale']
         matched_coordinates = self.find_all_templates(
-            screenshot, template, end=False, threshold=0.8)
+            screenshot, template, end=False, threshold=0.65)
 
-        # Get danger zone from constants
-        if hasattr(self.loc, 'DANGER_Y_MAX'):
-            danger_y_max = self.loc.DANGER_Y_MAX
-        else:
-            danger_y_max = 2690
+        # Get danger zones from constants
+        danger_y_max = getattr(self.loc, 'DANGER_Y_MAX', 2690)
+        danger_y_min = getattr(self.loc, 'DANGER_Y_MIN', 900)
 
         safe_matched_coordinates = []
         for c in matched_coordinates:
-            if c[1] <= danger_y_max:
+            # Filter out matches outside the safe zone (top UI and bottom bar)
+            if danger_y_min <= c[1] <= danger_y_max:
                 safe_matched_coordinates.append(c)
 
         return safe_matched_coordinates
