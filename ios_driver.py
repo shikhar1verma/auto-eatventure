@@ -171,6 +171,9 @@ class IOSDriver(DeviceDriver):
 
         return pil_image
 
+    # Y offset in points to adjust for status bar/Dynamic Island (tune if taps are off)
+    TAP_Y_OFFSET = 15  # Positive = tap lower on screen
+
     def tap(self, x: int, y: int) -> None:
         """Tap at coordinates (automatically converts pixels to points)."""
         if not self._connected:
@@ -179,7 +182,7 @@ class IOSDriver(DeviceDriver):
         # Convert pixel coordinates to points for iOS
         # Screenshots are in pixels but Appium taps use points
         point_x = int(x / self._scale_factor)
-        point_y = int(y / self._scale_factor)
+        point_y = int(y / self._scale_factor) + self.TAP_Y_OFFSET
 
         # Use W3C Actions for precise tap
         self._driver.tap([(point_x, point_y)])
@@ -191,7 +194,7 @@ class IOSDriver(DeviceDriver):
 
         # Convert pixel coordinates to points for iOS
         point_x = int(x / self._scale_factor)
-        point_y = int(y / self._scale_factor)
+        point_y = int(y / self._scale_factor) + self.TAP_Y_OFFSET
 
         # Use touch action for long press
         from selenium.webdriver.common.action_chains import ActionChains
