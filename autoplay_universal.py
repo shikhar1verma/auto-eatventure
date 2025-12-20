@@ -759,11 +759,14 @@ class AutoEatventure:
 
     def upgrade_food_items(self, coords):
         """Upgrade food items at given coordinates."""
-        for c in coords[:3]:
+        # Process up to 5 food items per cycle
+        for c in coords[:5]:
+            # Click on the food item to open upgrade menu
             self.click([c[0], c[1] + 30])
             y_neg_offset = 130
             x_pos_offset = 20
-            self.click_and_hold(c[0] + x_pos_offset, c[1] - y_neg_offset, 600)
+            # Hold longer (800ms) for more upgrades
+            self.click_and_hold(c[0] + x_pos_offset, c[1] - y_neg_offset, 800)
             # Multiple null taps to dismiss any popups
             self.click(self.loc.null_click_coords)
             self.click(self.loc.null_click_coords)
