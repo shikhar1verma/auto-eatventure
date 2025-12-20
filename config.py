@@ -15,6 +15,7 @@ load_dotenv()
 class Platform(Enum):
     ANDROID = "android"
     IOS = "ios"
+    PLAYCOVER = "playcover"
 
 
 class Config:
@@ -42,6 +43,12 @@ class Config:
         # Use iOS Simulator instead of physical device
         self.ios_use_simulator = os.getenv("IOS_USE_SIMULATOR", "false").lower() == "true"
 
+        # PlayCover settings (for Apple Silicon Macs)
+        self.playcover_app_name = os.getenv(
+            "PLAYCOVER_APP_NAME", "Idle Cooking Tycoon")
+        self.playcover_window_scale = float(os.getenv(
+            "PLAYCOVER_WINDOW_SCALE", "1.0"))
+
         # Cloud save credentials
         self.email = os.getenv("EMAIL", "")
         self.password = os.getenv("PASSWORD", "")
@@ -56,6 +63,8 @@ class Config:
         """Import and return the appropriate constants module."""
         if self.platform == Platform.IOS:
             import constants_ios as loc
+        elif self.platform == Platform.PLAYCOVER:
+            import constants_playcover as loc
         else:
             import constants as loc
         return loc
@@ -72,6 +81,12 @@ class Config:
                 device_name=self.ios_device_name,
                 platform_version=self.ios_platform_version,
                 use_simulator=self.ios_use_simulator
+            )
+        elif self.platform == Platform.PLAYCOVER:
+            from playcover_driver import PlayCoverDriver
+            return PlayCoverDriver(
+                app_name=self.playcover_app_name,
+                window_scale=self.playcover_window_scale
             )
         else:
             from android_driver import AndroidDriver

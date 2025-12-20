@@ -15,6 +15,10 @@ apkutils2>=1.0.0
 Appium-Python-Client>=3.1.0
 selenium>=4.15.0
 
+# PlayCover dependencies (for Apple Silicon Macs)
+pyautogui>=0.9.54
+pyobjc-framework-Quartz>=9.0  # macOS only, for better screenshots
+
 # Utility dependencies
 certifi
 charset-normalizer
