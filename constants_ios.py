@@ -21,7 +21,7 @@ To find coordinates on your device:
 # iPhone 14 Pro: 1179 x 2556
 # Scale factor: ~0.82 (width) and ~0.82 (height)
 # Scaling helper (adjust base dimensions for your device)
-ANDROID_WIDTH = 1179
+ANDROID_WIDTH = 1440  # Original Android resolution
 ANDROID_HEIGHT = 3120
 IOS_WIDTH = 1179  # Update for your iPhone model
 IOS_HEIGHT = 2556  # Update for your iPhone model
