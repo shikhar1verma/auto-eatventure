@@ -88,10 +88,13 @@ class IOSDriver(DeviceDriver):
             options.use_new_wda = False
             options.wda_launch_timeout = 120000
             options.wda_connection_timeout = 240000
-            options.wda_local_port = 8100
 
-            # Skip xcodebuild completely since WDA is already running
-            options.set_capability("useXctestrunFile", False)
+            # Use different port for Appium's internal proxy to avoid conflict with iproxy
+            options.wda_local_port = 8101
+
+            # Skip all WDA management - we're using externally running WDA
+            options.set_capability("skipLogCapture", True)
+            options.set_capability("waitForQuiescence", False)
 
             # Set bundle ID for the game
             options.bundle_id = self._bundle_id
