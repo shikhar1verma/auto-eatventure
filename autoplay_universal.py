@@ -450,7 +450,7 @@ class AutoEatventure:
 
         template = food_icon['grayscale']
         matched_coordinates = self.find_all_templates(
-            screenshot, template, end=False, threshold=0.65)
+            screenshot, template, end=False, threshold=0.75)
 
         # Get danger zones from constants
         danger_y_max = getattr(self.loc, 'DANGER_Y_MAX', 2690)
