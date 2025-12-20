@@ -17,190 +17,173 @@ To find coordinates on your device:
 """
 
 # Screen dimensions for reference
-# Android (Pixel 6 Pro): 1440 x 3120
-# iPhone 14 Pro: 1179 x 2556
-# Scale factor: ~0.82 (width) and ~0.82 (height)
-# Scaling helper (adjust base dimensions for your device)
-ANDROID_WIDTH = 1440  # Original Android resolution
-ANDROID_HEIGHT = 3120
-IOS_WIDTH = 1179  # Update for your iPhone model
-IOS_HEIGHT = 2556  # Update for your iPhone model
-
-def scale_x(android_x):
-    """Scale X coordinate from Android to iOS."""
-    return int(android_x * IOS_WIDTH / ANDROID_WIDTH)
-
-def scale_y(android_y):
-    """Scale Y coordinate from Android to iOS."""
-    return int(android_y * IOS_HEIGHT / ANDROID_HEIGHT)
-
-def scale_coords(android_coords):
-    """Scale coordinate dict from Android to iOS."""
-    return {
-        'x': scale_x(android_coords['x']),
-        'y': scale_y(android_coords['y'])
-    }
+# iPhone 14 Pro: 393 x 852 points (1179 x 2556 pixels at 3x scale)
+# Appium uses POINTS, not pixels!
+IOS_WIDTH = 393   # Points
+IOS_HEIGHT = 852  # Points
 
 # ============================================================
-# UI ELEMENT COORDINATES
-# These are scaled from Android - CALIBRATE FOR YOUR DEVICE
+# UI ELEMENT COORDINATES (in points, not pixels!)
+# Based on iPhone 14 Pro (393 x 852 points)
+# Calibrate these by taking screenshots and checking coordinates
 # ============================================================
 
 close_nofication_coords = {
-    'x': scale_x(710),
-    'y': scale_y(1894)
+    'x': 196,
+    'y': 520
 }
 
 first_lemonade_stand_open_coords = {
-    'x': scale_x(713),
-    'y': scale_y(1845)
+    'x': 196,
+    'y': 510
 }
 
 settings_coords = {
-    'x': scale_x(1339),
-    'y': scale_y(185)
+    'x': 370,
+    'y': 35
 }
 
 cloud_save_coords = {
-    'x': scale_x(654),
-    'y': scale_y(1632)
+    'x': 196,
+    'y': 450
 }
 
 email_input_coords = {
-    'x': scale_x(700),
-    'y': scale_y(1320)
+    'x': 196,
+    'y': 360
 }
 
 password_input_coords = {
-    'x': scale_x(700),
-    'y': scale_y(1600),
+    'x': 196,
+    'y': 440
 }
 
 text_ok_button_coords = {
-    'x': scale_x(1374),
-    'y': scale_y(1845),
+    'x': 370,
+    'y': 510
 }
 
 login_button_coords = {
-    'x': scale_x(700),
-    'y': scale_y(1940)
+    'x': 196,
+    'y': 530
 }
 
 use_cloud_save_button_coords = {
-    'x': scale_x(990),
-    'y': scale_y(2100)
+    'x': 270,
+    'y': 575
 }
 
 close_game_for_restart_button_coords = {
-    'x': scale_x(734),
-    'y': scale_y(1821)
+    'x': 196,
+    'y': 500
 }
 
 close_offline_earnings_coords = {
-    'x': scale_x(1150),
-    'y': scale_y(1164)
+    'x': 315,
+    'y': 320
 }
 
+# Bottom right blue up-arrow button
 upgrade_button_coords = {
-    'x': scale_x(1290),
-    'y': scale_y(2904)
+    'x': 355,
+    'y': 815
 }
 
 single_upgrade_button_coords = {
-    'x': scale_x(1143),
-    'y': scale_y(1283)
+    'x': 310,
+    'y': 350
 }
 
 close_upgrade_button_coords = {
-    'x': scale_x(1222),
-    'y': scale_y(1045)
+    'x': 335,
+    'y': 285
 }
 
 next_level_button_coords = {
-    'x': scale_x(150),
-    'y': scale_y(2900)
+    'x': 40,
+    'y': 815
 }
 
 renovate_button_coords = {
-    'x': scale_x(700),
-    'y': scale_y(2200)
+    'x': 196,
+    'y': 600
 }
 
 ads_button_coords = {
-    'x': scale_x(720),
-    'y': scale_y(2950)
+    'x': 196,
+    'y': 820
 }
 
 fly_next_city_button_coords = {
-    'x': scale_x(700),
-    'y': scale_y(2050)
+    'x': 196,
+    'y': 560
 }
 
 welcome_city_ok_button_coords = {
-    'x': scale_x(730),
-    'y': scale_y(1950)
+    'x': 200,
+    'y': 535
 }
 
 null_click_coords = {
-    'x': scale_x(810),
-    'y': scale_y(320)
+    'x': 220,
+    'y': 90
 }
 
 chest_coords = {
-    'x': scale_x(130),
-    'y': scale_y(845)
+    'x': 35,
+    'y': 230
 }
 
 close_chest_button_coords = {
-    'x': scale_x(1330),
-    'y': scale_y(230)
+    'x': 365,
+    'y': 60
 }
 
 # ============================================================
-# SWIPE COORDINATES
+# SWIPE COORDINATES (in points)
 # ============================================================
 
 swipe_layout_down_coords = {
     'start': {
-        'x': scale_x(900),
-        'y': scale_y(2500)
+        'x': 196,
+        'y': 680
     },
     'end': {
-        'x': scale_x(900),
-        'y': scale_y(800)
+        'x': 196,
+        'y': 220
     }
 }
 
 swipe_layout_up_coords = {
     'end': {
-        'x': scale_x(900),
-        'y': scale_y(2500)
+        'x': 196,
+        'y': 680
     },
     'start': {
-        'x': scale_x(900),
-        'y': scale_y(800)
+        'x': 196,
+        'y': 220
     }
 }
 
 swipe_layout_little_up_coords = {
     'end': {
-        'x': scale_x(900),
-        'y': scale_y(1500)
+        'x': 196,
+        'y': 410
     },
     'start': {
-        'x': scale_x(900),
-        'y': scale_y(800)
+        'x': 196,
+        'y': 220
     }
 }
 
 swipe_layout_little_down_coords = {
     'start': {
-        'x': scale_x(900),
-        'y': scale_y(1500)
+        'x': 196,
+        'y': 410
     },
     'end': {
-        'x': scale_x(900),
-        'y': scale_y(800)
+        'x': 196,
+        'y': 220
     }
 }
 
@@ -236,20 +219,20 @@ BOX_COLOR_TOLERANCE = 2
 # Used to detect if boost is active
 BOOST_INDICATOR_COLOR_BGR = [42, 192, 255]
 
-# Boost indicator check line coordinates
-BOOST_CHECK_START = {'x': scale_x(408), 'y': scale_y(274)}
-BOOST_CHECK_END = {'x': scale_x(466), 'y': scale_y(274)}
+# Boost indicator check line coordinates (in points)
+BOOST_CHECK_START = {'x': 110, 'y': 75}
+BOOST_CHECK_END = {'x': 125, 'y': 75}
 
 # ============================================================
-# DANGER ZONES
+# DANGER ZONES (in points)
 # Y coordinates that are too close to edges/menus
 # ============================================================
 
 # Maximum Y coordinate for safe food item detection
-DANGER_Y_MAX = scale_y(2690)
+DANGER_Y_MAX = 735
 
 # Minimum Y coordinate (items too high can overlap with UI)
-DANGER_Y_MIN = scale_y(1100)
+DANGER_Y_MIN = 300
 
 # ============================================================
 # TIMING CONSTANTS
