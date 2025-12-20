@@ -39,6 +39,8 @@ class Config:
         self.appium_url = os.getenv("APPIUM_URL", "http://127.0.0.1:4723")
         self.wda_bundle_id = os.getenv(
             "WDA_BUNDLE_ID", "com.yourname.WebDriverAgentRunner")
+        # Use iOS Simulator instead of physical device
+        self.ios_use_simulator = os.getenv("IOS_USE_SIMULATOR", "false").lower() == "true"
 
         # Cloud save credentials
         self.email = os.getenv("EMAIL", "")
@@ -68,7 +70,8 @@ class Config:
                 bundle_id=self.ios_bundle_id,
                 wda_bundle_id=self.wda_bundle_id,
                 device_name=self.ios_device_name,
-                platform_version=self.ios_platform_version
+                platform_version=self.ios_platform_version,
+                use_simulator=self.ios_use_simulator
             )
         else:
             from android_driver import AndroidDriver

@@ -42,7 +42,8 @@ class IOSDriver(DeviceDriver):
         wda_bundle_id: str = "com.facebook.WebDriverAgentRunner.xctrunner",
         device_name: str = "iPhone",
         platform_version: str = "17.0",
-        scale_factor: float = 3.0
+        scale_factor: float = 3.0,
+        use_simulator: bool = False
     ):
         """
         Initialize iOS driver.
@@ -54,6 +55,8 @@ class IOSDriver(DeviceDriver):
             wda_bundle_id: WebDriverAgent bundle ID (update if you changed it)
             device_name: Device name for capabilities
             platform_version: iOS version
+            scale_factor: Pixel to point scale factor (3.0 for iPhone 14 Pro)
+            use_simulator: If True, use iOS Simulator instead of physical device
         """
         if not APPIUM_AVAILABLE:
             raise ImportError(
@@ -68,6 +71,7 @@ class IOSDriver(DeviceDriver):
         self._platform_version = platform_version
         self._udid = udid
         self._scale_factor = scale_factor
+        self._use_simulator = use_simulator
 
         self._driver = None
         self._connected = False
@@ -86,27 +90,30 @@ class IOSDriver(DeviceDriver):
             options.no_reset = True
             options.full_reset = False
 
-            # Connect to WebDriverAgent that's already running from Xcode
-            # This tells Appium to use the existing WDA instead of building its own
-            options.set_capability("webDriverAgentUrl", "http://localhost:8100")
-            options.use_prebuilt_wda = True
-            options.use_new_wda = False
-            options.wda_launch_timeout = 120000
-            options.wda_connection_timeout = 240000
+            if self._use_simulator:
+                # Simulator mode - Appium manages WDA automatically
+                print("Using iOS Simulator mode")
+                options.set_capability("isSimulator", True)
+            else:
+                # Physical device mode - connect to WDA running from Xcode
+                print("Using physical device mode")
+                options.set_capability("webDriverAgentUrl", "http://localhost:8100")
+                options.use_prebuilt_wda = True
+                options.use_new_wda = False
+                options.wda_launch_timeout = 120000
+                options.wda_connection_timeout = 240000
+                options.wda_local_port = 8101
 
-            # Use different port for Appium's internal proxy to avoid conflict with iproxy
-            options.wda_local_port = 8101
+                # Set custom WDA bundle ID if provided
+                if self._wda_bundle_id:
+                    options.updated_wda_bundle_id = self._wda_bundle_id
 
-            # Skip all WDA management - we're using externally running WDA
+            # Skip log capture for faster performance
             options.set_capability("skipLogCapture", True)
             options.set_capability("waitForQuiescence", False)
 
             # Set bundle ID for the game
             options.bundle_id = self._bundle_id
-
-            # Set custom WDA bundle ID if provided
-            if self._wda_bundle_id:
-                options.updated_wda_bundle_id = self._wda_bundle_id
 
             # Set UDID if provided
             if self._udid:
