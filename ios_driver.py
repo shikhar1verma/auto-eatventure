@@ -81,10 +81,17 @@ class IOSDriver(DeviceDriver):
             options.no_reset = True
             options.full_reset = False
 
-            # Use existing WebDriverAgent
+            # Use existing WebDriverAgent that's already running
             options.use_prebuilt_wda = True
+            options.use_new_wda = False  # Don't reinstall WDA
             options.wda_launch_timeout = 120000
             options.wda_connection_timeout = 240000
+
+            # Show Xcode logs for debugging
+            options.show_xcode_log = True
+
+            # Use the WDA that's already running on device
+            options.wda_local_port = 8100
 
             # Set bundle ID for the game
             options.bundle_id = self._bundle_id
