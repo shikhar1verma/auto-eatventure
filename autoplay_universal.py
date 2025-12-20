@@ -1011,8 +1011,10 @@ class AutoEatventure:
                         new_level_first_food_icon_swipe = False
                         new_level_started = True
 
-            # End of cycle: try to dismiss any unexpected popups
-            if count % 3 == 0:
+            # Only try to dismiss popups when stuck (not finding anything to upgrade)
+            # This prevents interfering with normal upgrade flow
+            if nothing_to_update_count >= 10 and nothing_to_update_count % 5 == 0:
+                print("[POPUP] Checking for stuck popups...")
                 self.dismiss_popups()
 
         print("[STOP] Main loop ended")
