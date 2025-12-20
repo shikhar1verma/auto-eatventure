@@ -56,31 +56,46 @@ class AutoEatventure:
                 print(f"Warning: iOS template folder not found at {ios_folder}")
                 print("Using Android templates - you should create iOS-specific templates")
 
+        # iOS-specific settings
+        self.skip_ads = self.config.platform == Platform.IOS  # Skip ads on iOS
+        self.skip_notifications = self.config.platform == Platform.IOS  # iOS handles separately
+        self.skip_offline_earnings = self.config.platform == Platform.IOS
+
         self.matching_screenshots_path = {
-            'notification': f'{template_folder}/notification.png',
-            'first_lemondae_stand_open': f'{template_folder}/first_lemonade_stand_open.png',
-            'settings': f'{template_folder}/settings.png',
-            'offline_earnings': f'{template_folder}/offline_earnings.png',
-            'upgrade_button': f'{template_folder}/upgrade_button.png',
-            'single_upgrade': f'{template_folder}/single_upgrade.png',
-            'box': f'{template_folder}/box.png',
-            'box2': f'{template_folder}/box2.png',
-            'buy_better_food_icon': f'{template_folder}/buy_better_food_icon.png',
-            'buy_better_food_button': f'{template_folder}/buy_better_food_button.png',
-            'go_next_level': f'{template_folder}/go_next_level_icon.png',
-            'no_boost_indicator_2x': f'{template_folder}/no_boost_indicator_2x.png',
-            'fly_next_city_icon': f'{template_folder}/fly_next_city_icon.png',
-            'small_investor_icon': f'{template_folder}/small_investor_icon.png',
-            'investor': f'{template_folder}/investor.png',
-            'chest_icon': f'{template_folder}/chest_icon.png',
+            'settings': self._find_template(template_folder, 'settings'),
+            'upgrade_button': self._find_template(template_folder, 'upgrade_button'),
+            'single_upgrade': self._find_template(template_folder, 'single_upgrade'),
+            'box': self._find_template(template_folder, 'box'),
+            'box2': self._find_template(template_folder, 'box2'),
+            'buy_better_food_icon': self._find_template(template_folder, 'buy_better_food_icon'),
+            'buy_better_food_button': self._find_template(template_folder, 'buy_better_food_button'),
+            'go_next_level': self._find_template(template_folder, 'go_next_level_icon'),
+            'fly_next_city_icon': self._find_template(template_folder, 'fly_next_city_icon'),
+            'small_investor_icon': self._find_template(template_folder, 'small_investor_icon'),
+            'investor': self._find_template(template_folder, 'investor'),
+            'chest_icon': self._find_template(template_folder, 'chest_icon'),
+            # Only needed for Android
+            'notification': self._find_template(template_folder, 'notification'),
+            'first_lemondae_stand_open': self._find_template(template_folder, 'first_lemonade_stand_open'),
+            'offline_earnings': self._find_template(template_folder, 'offline_earnings'),
+            'no_boost_indicator_2x': self._find_template(template_folder, 'no_boost_indicator_2x'),
             'ads_crosses': {
-                'cross1': f'{template_folder}/ads_crosses/cross1.png',
+                'cross1': self._find_template(f'{template_folder}/ads_crosses', 'cross1'),
             }
         }
         self.matching_templates_cv2 = {}
         self.load_templates()
 
         print(f"AutoEatventure initialized for {self.config.platform.value}")
+
+    def _find_template(self, folder: str, name: str) -> str:
+        """Find template file, checking for both .png and .jpg extensions."""
+        for ext in ['.png', '.jpg', '.jpeg']:
+            path = f'{folder}/{name}{ext}'
+            if os.path.exists(path):
+                return path
+        # Return .png path as default (will show warning later if not found)
+        return f'{folder}/{name}.png'
 
     def load_templates(self):
         """Load all template images for matching."""
@@ -679,7 +694,8 @@ class AutoEatventure:
 
     def start_game_for_first_time(self):
         """Handle first-time game startup dialogs."""
-        is_notification_closed = False
+        # Skip notification handling on iOS (handled by OS)
+        is_notification_closed = self.skip_notifications
         is_first_stand_closed = False
         while True:
             print('checking ')
@@ -710,8 +726,13 @@ class AutoEatventure:
             self.capture_screenshot()
             if self.is_having_settings():
                 break
-            if self.is_having_offline_earnings():
+            # Skip offline earnings check on iOS
+            if not self.skip_offline_earnings and self.is_having_offline_earnings():
                 self.click(self.loc.close_offline_earnings_coords)
+                break
+            # On iOS, just wait for settings icon to appear
+            if self.skip_offline_earnings:
+                time.sleep(2)
                 break
             time.sleep(5)
         return
@@ -758,8 +779,8 @@ class AutoEatventure:
                 with Timer("Redeem investor"):
                     self.redeem_investor()
 
-            # Check for ads
-            if count == 1 or count % 100 == 0:
+            # Check for ads (skip on iOS)
+            if not self.skip_ads and (count == 1 or count % 100 == 0):
                 with Timer("Running full boost ads"):
                     print('Checking for boost')
                     if self.is_having_no_boost_indicator():
