@@ -84,9 +84,10 @@ close_offline_earnings_coords = {
 }
 
 # Bottom right blue up-arrow button
+# Moved up slightly to avoid iOS safe area at bottom
 upgrade_button_coords = {
-    'x': 1065,
-    'y': 2445
+    'x': 1070,
+    'y': 2380
 }
 
 single_upgrade_button_coords = {
@@ -101,7 +102,7 @@ close_upgrade_button_coords = {
 
 next_level_button_coords = {
     'x': 120,
-    'y': 2445
+    'y': 2380
 }
 
 renovate_button_coords = {
@@ -111,7 +112,7 @@ renovate_button_coords = {
 
 ads_button_coords = {
     'x': 590,
-    'y': 2460
+    'y': 2380
 }
 
 fly_next_city_button_coords = {
