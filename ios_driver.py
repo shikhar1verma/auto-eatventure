@@ -10,9 +10,11 @@ Requires:
 
 import base64
 import io
+import os
 import time
+from datetime import datetime
 from typing import Tuple, Optional, Dict, Any
-from PIL import Image
+from PIL import Image, ImageDraw
 
 try:
     from appium import webdriver
@@ -33,6 +35,10 @@ class IOSDriver(DeviceDriver):
 
     # Scale factor for converting pixels to points (iPhone 14 Pro = 3x)
     SCALE_FACTOR = 3.0
+
+    # Debug mode - saves screenshots with tap markers
+    DEBUG_TAPS = os.getenv("DEBUG_TAPS", "true").lower() == "true"
+    DEBUG_DIR = "debug_taps"
 
     def __init__(
         self,
@@ -176,10 +182,60 @@ class IOSDriver(DeviceDriver):
         pil_image = Image.open(io.BytesIO(screenshot_bytes))
         pil_image = pil_image.convert("RGB")
 
+        # Store for debug overlay
+        if self.DEBUG_TAPS:
+            self._last_screenshot = pil_image.copy()
+
         return pil_image
 
+    def _save_debug_screenshot(self, pixel_x: int, pixel_y: int, point_x: int, point_y: int) -> None:
+        """Save screenshot with tap marker for debugging."""
+        if not self._last_screenshot:
+            return
+
+        try:
+            # Create debug directory
+            os.makedirs(self.DEBUG_DIR, exist_ok=True)
+
+            # Copy screenshot and draw markers
+            debug_img = self._last_screenshot.copy()
+            draw = ImageDraw.Draw(debug_img)
+
+            # Draw crosshair at PIXEL coordinates (where we detected the target)
+            # Blue = detected position
+            cross_size = 40
+            draw.line([(pixel_x - cross_size, pixel_y), (pixel_x + cross_size, pixel_y)], fill='blue', width=5)
+            draw.line([(pixel_x, pixel_y - cross_size), (pixel_x, pixel_y + cross_size)], fill='blue', width=5)
+            draw.ellipse([(pixel_x - 30, pixel_y - 30), (pixel_x + 30, pixel_y + 30)], outline='blue', width=5)
+
+            # Draw where the TAP will actually land (convert point back to pixel)
+            actual_pixel_x = int(point_x * self._scale_factor)
+            actual_pixel_y = int(point_y * self._scale_factor)
+
+            # Red = actual tap position
+            draw.line([(actual_pixel_x - cross_size, actual_pixel_y), (actual_pixel_x + cross_size, actual_pixel_y)], fill='red', width=5)
+            draw.line([(actual_pixel_x, actual_pixel_y - cross_size), (actual_pixel_x, actual_pixel_y + cross_size)], fill='red', width=5)
+            draw.ellipse([(actual_pixel_x - 25, actual_pixel_y - 25), (actual_pixel_x + 25, actual_pixel_y + 25)], outline='red', width=5)
+
+            # Add text label
+            label = f"Detected: ({pixel_x}, {pixel_y}) | Tap: ({point_x}, {point_y}) → pixel({actual_pixel_x}, {actual_pixel_y})"
+            draw.rectangle([(10, 10), (len(label) * 12 + 20, 50)], fill='black')
+            draw.text((15, 15), label, fill='white')
+
+            # Save with timestamp
+            timestamp = datetime.now().strftime("%H%M%S_%f")[:-3]
+            filename = f"{self.DEBUG_DIR}/tap_{timestamp}_{pixel_x}_{pixel_y}.png"
+            debug_img.save(filename)
+            print(f"[DEBUG] Saved tap screenshot: {filename}")
+
+        except Exception as e:
+            print(f"[DEBUG] Failed to save debug screenshot: {e}")
+
     # Y offset in points to adjust for status bar/Dynamic Island (tune if taps are off)
-    TAP_Y_OFFSET = 15  # Positive = tap lower on screen
+    TAP_Y_OFFSET = 0  # Start with 0, adjust if needed
+
+    # Store last screenshot for debug overlay
+    _last_screenshot = None
 
     def tap(self, x: int, y: int) -> None:
         """Tap at coordinates (automatically converts pixels to points)."""
@@ -192,6 +248,10 @@ class IOSDriver(DeviceDriver):
         point_y = int(y / self._scale_factor) + self.TAP_Y_OFFSET
 
         print(f"[TAP] pixel({x}, {y}) → point({point_x}, {point_y})")
+
+        # Save debug screenshot with tap marker
+        if self.DEBUG_TAPS and self._last_screenshot:
+            self._save_debug_screenshot(x, y, point_x, point_y)
 
         # Use W3C Actions for precise tap
         self._driver.tap([(point_x, point_y)])
