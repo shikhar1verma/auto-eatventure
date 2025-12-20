@@ -231,10 +231,11 @@ BOOST_CHECK_END = {'x': 375, 'y': 225}
 
 # Maximum Y coordinate for safe food item detection
 # Set lower to exclude bottom bar buttons (upgrade button at ~2445)
-DANGER_Y_MAX = 2100
+DANGER_Y_MAX = 2150
 
 # Minimum Y coordinate (items too high can overlap with UI)
-DANGER_Y_MIN = 900
+# Lowered to allow chest detection at y~690-840
+DANGER_Y_MIN = 600
 
 # ============================================================
 # TIMING CONSTANTS
