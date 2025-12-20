@@ -16,6 +16,7 @@ class Platform(Enum):
     ANDROID = "android"
     IOS = "ios"
     PLAYCOVER = "playcover"
+    MIRRORING = "mirroring"  # iPhone Mirroring on macOS Sequoia
 
 
 class Config:
@@ -61,7 +62,7 @@ class Config:
 
     def get_constants_module(self):
         """Import and return the appropriate constants module."""
-        if self.platform == Platform.IOS:
+        if self.platform == Platform.IOS or self.platform == Platform.MIRRORING:
             import constants_ios as loc
         elif self.platform == Platform.PLAYCOVER:
             import constants_playcover as loc
@@ -88,6 +89,9 @@ class Config:
                 app_name=self.playcover_app_name,
                 window_scale=self.playcover_window_scale
             )
+        elif self.platform == Platform.MIRRORING:
+            from mirroring_driver import MirroringDriver
+            return MirroringDriver()
         else:
             from android_driver import AndroidDriver
             return AndroidDriver(device_serial=self.android_device_serial)
