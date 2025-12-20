@@ -236,7 +236,7 @@ class MirroringDriver(DeviceDriver):
 
     def swipe(self, start_x: int, start_y: int, end_x: int, end_y: int,
               duration_ms: int = 500) -> None:
-        """Perform swipe gesture."""
+        """Perform swipe gesture (touch, hold, drag, release)."""
         if not self._connected:
             raise RuntimeError("Not connected")
 
@@ -247,10 +247,37 @@ class MirroringDriver(DeviceDriver):
         screen_start_x, screen_start_y = self._to_screen_coords(start_x, start_y)
         screen_end_x, screen_end_y = self._to_screen_coords(end_x, end_y)
 
+        # Move to start position first
         pyautogui.moveTo(screen_start_x, screen_start_y)
-        pyautogui.mouseDown()
+        time.sleep(0.05)  # Small delay to ensure position
+
+        # Press and hold
+        pyautogui.mouseDown(button='left')
+        time.sleep(0.05)  # Small delay to register touch
+
+        # Drag to end position
         pyautogui.moveTo(screen_end_x, screen_end_y, duration=duration_ms / 1000.0)
-        pyautogui.mouseUp()
+
+        # Release
+        pyautogui.mouseUp(button='left')
+
+    def scroll(self, x: int, y: int, direction: str = "down", amount: int = 3) -> None:
+        """Scroll using scroll wheel (alternative to swipe)."""
+        if not self._connected:
+            raise RuntimeError("Not connected")
+
+        self._find_window()
+        if not self._window_bounds:
+            raise RuntimeError("Window not found")
+
+        screen_x, screen_y = self._to_screen_coords(x, y)
+
+        # Move to position first
+        pyautogui.moveTo(screen_x, screen_y)
+
+        # Scroll direction: positive = up, negative = down
+        clicks = amount if direction == "up" else -amount
+        pyautogui.scroll(clicks)
 
     def input_text(self, text: str) -> None:
         """Input text via keyboard."""
