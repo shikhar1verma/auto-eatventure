@@ -31,6 +31,9 @@ class IOSDriver(DeviceDriver):
     # Default Appium server URL
     DEFAULT_APPIUM_URL = "http://127.0.0.1:4723"
 
+    # Scale factor for converting pixels to points (iPhone 14 Pro = 3x)
+    SCALE_FACTOR = 3.0
+
     def __init__(
         self,
         udid: Optional[str] = None,
@@ -38,7 +41,8 @@ class IOSDriver(DeviceDriver):
         bundle_id: str = "com.hwqgrhhjfd.idlefastfood",
         wda_bundle_id: str = "com.facebook.WebDriverAgentRunner.xctrunner",
         device_name: str = "iPhone",
-        platform_version: str = "17.0"
+        platform_version: str = "17.0",
+        scale_factor: float = 3.0
     ):
         """
         Initialize iOS driver.
@@ -63,6 +67,7 @@ class IOSDriver(DeviceDriver):
         self._device_name = device_name
         self._platform_version = platform_version
         self._udid = udid
+        self._scale_factor = scale_factor
 
         self._driver = None
         self._connected = False
@@ -167,17 +172,26 @@ class IOSDriver(DeviceDriver):
         return pil_image
 
     def tap(self, x: int, y: int) -> None:
-        """Tap at coordinates."""
+        """Tap at coordinates (automatically converts pixels to points)."""
         if not self._connected:
             raise RuntimeError("Device not connected")
+
+        # Convert pixel coordinates to points for iOS
+        # Screenshots are in pixels but Appium taps use points
+        point_x = int(x / self._scale_factor)
+        point_y = int(y / self._scale_factor)
 
         # Use W3C Actions for precise tap
-        self._driver.tap([(x, y)])
+        self._driver.tap([(point_x, point_y)])
 
     def tap_and_hold(self, x: int, y: int, duration_ms: int = 1000) -> None:
-        """Long press at coordinates."""
+        """Long press at coordinates (automatically converts pixels to points)."""
         if not self._connected:
             raise RuntimeError("Device not connected")
+
+        # Convert pixel coordinates to points for iOS
+        point_x = int(x / self._scale_factor)
+        point_y = int(y / self._scale_factor)
 
         # Use touch action for long press
         from selenium.webdriver.common.action_chains import ActionChains
@@ -190,7 +204,7 @@ class IOSDriver(DeviceDriver):
             self._driver,
             mouse=PointerInput(interaction.POINTER_TOUCH, "touch")
         )
-        actions.w3c_actions.pointer_action.move_to_location(x, y)
+        actions.w3c_actions.pointer_action.move_to_location(point_x, point_y)
         actions.w3c_actions.pointer_action.pointer_down()
         actions.w3c_actions.pointer_action.pause(duration_ms / 1000.0)
         actions.w3c_actions.pointer_action.release()
@@ -198,11 +212,17 @@ class IOSDriver(DeviceDriver):
 
     def swipe(self, start_x: int, start_y: int, end_x: int, end_y: int,
               duration_ms: int = 500) -> None:
-        """Perform swipe gesture."""
+        """Perform swipe gesture (automatically converts pixels to points)."""
         if not self._connected:
             raise RuntimeError("Device not connected")
 
-        self._driver.swipe(start_x, start_y, end_x, end_y, duration_ms)
+        # Convert pixel coordinates to points for iOS
+        start_x_pt = int(start_x / self._scale_factor)
+        start_y_pt = int(start_y / self._scale_factor)
+        end_x_pt = int(end_x / self._scale_factor)
+        end_y_pt = int(end_y / self._scale_factor)
+
+        self._driver.swipe(start_x_pt, start_y_pt, end_x_pt, end_y_pt, duration_ms)
 
     def input_text(self, text: str) -> None:
         """Input text on device."""

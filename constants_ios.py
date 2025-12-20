@@ -17,173 +17,173 @@ To find coordinates on your device:
 """
 
 # Screen dimensions for reference
-# iPhone 14 Pro: 393 x 852 points (1179 x 2556 pixels at 3x scale)
-# Appium uses POINTS, not pixels!
-IOS_WIDTH = 393   # Points
-IOS_HEIGHT = 852  # Points
+# iPhone 14 Pro: 1179 x 2556 pixels (393 x 852 points at 3x scale)
+# All coordinates below are in PIXELS (driver auto-converts to points)
+IOS_WIDTH = 1179   # Pixels
+IOS_HEIGHT = 2556  # Pixels
 
 # ============================================================
-# UI ELEMENT COORDINATES (in points, not pixels!)
-# Based on iPhone 14 Pro (393 x 852 points)
-# Calibrate these by taking screenshots and checking coordinates
+# UI ELEMENT COORDINATES (in pixels - auto-converted to points by driver)
+# Based on iPhone 14 Pro (1179 x 2556 pixels)
+# Calibrate by checking screenshot pixel coordinates
 # ============================================================
 
 close_nofication_coords = {
-    'x': 196,
-    'y': 520
+    'x': 590,
+    'y': 1560
 }
 
 first_lemonade_stand_open_coords = {
-    'x': 196,
-    'y': 510
+    'x': 590,
+    'y': 1530
 }
 
 settings_coords = {
-    'x': 370,
-    'y': 35
+    'x': 1110,
+    'y': 105
 }
 
 cloud_save_coords = {
-    'x': 196,
-    'y': 450
+    'x': 590,
+    'y': 1350
 }
 
 email_input_coords = {
-    'x': 196,
-    'y': 360
+    'x': 590,
+    'y': 1080
 }
 
 password_input_coords = {
-    'x': 196,
-    'y': 440
+    'x': 590,
+    'y': 1320
 }
 
 text_ok_button_coords = {
-    'x': 370,
-    'y': 510
+    'x': 1110,
+    'y': 1530
 }
 
 login_button_coords = {
-    'x': 196,
-    'y': 530
+    'x': 590,
+    'y': 1590
 }
 
 use_cloud_save_button_coords = {
-    'x': 270,
-    'y': 575
+    'x': 810,
+    'y': 1725
 }
 
 close_game_for_restart_button_coords = {
-    'x': 196,
-    'y': 500
+    'x': 590,
+    'y': 1500
 }
 
 close_offline_earnings_coords = {
-    'x': 315,
-    'y': 320
+    'x': 945,
+    'y': 960
 }
 
 # Bottom right blue up-arrow button
 upgrade_button_coords = {
-    'x': 355,
-    'y': 815
+    'x': 1065,
+    'y': 2445
 }
 
 single_upgrade_button_coords = {
-    'x': 310,
-    'y': 350
+    'x': 930,
+    'y': 1050
 }
 
 close_upgrade_button_coords = {
-    'x': 335,
-    'y': 285
+    'x': 1005,
+    'y': 855
 }
 
 next_level_button_coords = {
-    'x': 40,
-    'y': 815
+    'x': 120,
+    'y': 2445
 }
 
 renovate_button_coords = {
-    'x': 196,
-    'y': 600
+    'x': 590,
+    'y': 1800
 }
 
 ads_button_coords = {
-    'x': 196,
-    'y': 820
+    'x': 590,
+    'y': 2460
 }
 
 fly_next_city_button_coords = {
-    'x': 196,
-    'y': 560
+    'x': 590,
+    'y': 1680
 }
 
 welcome_city_ok_button_coords = {
-    'x': 200,
-    'y': 535
+    'x': 600,
+    'y': 1605
 }
 
 null_click_coords = {
-    'x': 220,
-    'y': 90
+    'x': 660,
+    'y': 270
 }
 
 chest_coords = {
-    'x': 35,
-    'y': 230
+    'x': 105,
+    'y': 690
 }
 
 close_chest_button_coords = {
-    'x': 365,
-    'y': 60
+    'x': 1095,
+    'y': 180
 }
 
 # ============================================================
-# SWIPE COORDINATES (in points)
+# SWIPE COORDINATES (in pixels)
 # ============================================================
 
 swipe_layout_down_coords = {
     'start': {
-        'x': 196,
-        'y': 680
+        'x': 590,
+        'y': 2040
     },
     'end': {
-        'x': 196,
-        'y': 220
+        'x': 590,
+        'y': 660
     }
 }
 
 swipe_layout_up_coords = {
     'end': {
-        'x': 196,
-        'y': 680
+        'x': 590,
+        'y': 2040
     },
     'start': {
-        'x': 196,
-        'y': 220
+        'x': 590,
+        'y': 660
     }
 }
 
 swipe_layout_little_up_coords = {
     'end': {
-        'x': 196,
-        'y': 410
+        'x': 590,
+        'y': 1230
     },
     'start': {
-        'x': 196,
-        'y': 220
+        'x': 590,
+        'y': 660
     }
 }
 
 swipe_layout_little_down_coords = {
     'start': {
-        'x': 196,
-        'y': 410
+        'x': 590,
+        'y': 1230
     },
     'end': {
-        'x': 196,
-        'y': 220
+        'x': 590,
+        'y': 660
     }
 }
 
@@ -219,20 +219,20 @@ BOX_COLOR_TOLERANCE = 2
 # Used to detect if boost is active
 BOOST_INDICATOR_COLOR_BGR = [42, 192, 255]
 
-# Boost indicator check line coordinates (in points)
-BOOST_CHECK_START = {'x': 110, 'y': 75}
-BOOST_CHECK_END = {'x': 125, 'y': 75}
+# Boost indicator check line coordinates (in pixels)
+BOOST_CHECK_START = {'x': 330, 'y': 225}
+BOOST_CHECK_END = {'x': 375, 'y': 225}
 
 # ============================================================
-# DANGER ZONES (in points)
+# DANGER ZONES (in pixels)
 # Y coordinates that are too close to edges/menus
 # ============================================================
 
 # Maximum Y coordinate for safe food item detection
-DANGER_Y_MAX = 735
+DANGER_Y_MAX = 2200
 
 # Minimum Y coordinate (items too high can overlap with UI)
-DANGER_Y_MIN = 300
+DANGER_Y_MIN = 900
 
 # ============================================================
 # TIMING CONSTANTS
