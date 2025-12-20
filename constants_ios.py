@@ -20,9 +20,8 @@ To find coordinates on your device:
 # Android (Pixel 6 Pro): 1440 x 3120
 # iPhone 14 Pro: 1179 x 2556
 # Scale factor: ~0.82 (width) and ~0.82 (height)
-
 # Scaling helper (adjust base dimensions for your device)
-ANDROID_WIDTH = 1440
+ANDROID_WIDTH = 1179
 ANDROID_HEIGHT = 3120
 IOS_WIDTH = 1179  # Update for your iPhone model
 IOS_HEIGHT = 2556  # Update for your iPhone model
