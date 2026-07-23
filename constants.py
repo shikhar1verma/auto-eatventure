@@ -1,155 +1,163 @@
+class Constants:
+    """Coordinate dicts built from a ScaledCoords instance.
 
-close_nofication_coords = {
-    'x': 710,
-    'y': 1894
-}
+    All callers that previously used module-level `loc.xxx` now use
+    an instance: `self.loc = Constants(sc)` then `self.loc.xxx`.
+    """
 
-first_lemonade_stand_open_coords = {
-    'x': 713,
-    'y': 1845
-}
+    def __init__(self, sc):
+        self.close_nofication_coords = {
+            'x': sc.close_notification_x,
+            'y': sc.close_notification_y
+        }
 
-settings_coords = {
-    'x': 1339,
-    'y': 185
-}
+        self.first_lemonade_stand_open_coords = {
+            'x': sc.first_lemonade_stand_open_x,
+            'y': sc.first_lemonade_stand_open_y
+        }
 
-cloud_save_coords = {
-    'x': 654,
-    'y': 1632
-}
+        self.settings_coords = {
+            'x': sc.settings_x,
+            'y': sc.settings_y
+        }
 
-email_input_coords = {
-    'x': 700,
-    'y': 1320
-}
+        self.cloud_save_coords = {
+            'x': sc.cloud_save_x,
+            'y': sc.cloud_save_y
+        }
 
-password_input_coords = {
-    'x': 700,
-    'y': 1600,
-}
+        self.email_input_coords = {
+            'x': sc.email_input_x,
+            'y': sc.email_input_y
+        }
 
-text_ok_button_coords = {
-    'x': 1374,
-    'y': 1845,
-}
+        self.password_input_coords = {
+            'x': sc.password_input_x,
+            'y': sc.password_input_y,
+        }
 
-login_button_coords = {
-    'x': 700,
-    'y': 1940
-}
+        self.text_ok_button_coords = {
+            'x': sc.text_ok_button_x,
+            'y': sc.text_ok_button_y,
+        }
 
-use_cloud_save_button_coords = {
-    'x': 990,
-    'y': 2100
-}
+        self.login_button_coords = {
+            'x': sc.login_button_x,
+            'y': sc.login_button_y
+        }
 
-close_game_for_restart_button_coords = {
-    'x': 734,
-    'y': 1821
-}
+        self.use_cloud_save_button_coords = {
+            'x': sc.use_cloud_save_button_x,
+            'y': sc.use_cloud_save_button_y
+        }
 
-close_offline_earnings_coords = {
-    'x': 1150,
-    'y': 1164
-}
+        self.close_game_for_restart_button_coords = {
+            'x': sc.close_game_for_restart_x,
+            'y': sc.close_game_for_restart_y
+        }
 
-upgrade_button_coords = {
-    'x': 1290,
-    'y': 2904
-}
+        self.close_offline_earnings_coords = {
+            'x': sc.close_offline_earnings_x,
+            'y': sc.close_offline_earnings_y
+        }
 
-single_upgrade_button_coords = {
-    'x': 1143,
-    'y': 1283
-}
+        self.upgrade_button_coords = {
+            'x': sc.upgrade_button_x,
+            'y': sc.upgrade_button_y
+        }
 
-close_upgrade_button_coords = {
-    'x': 1222,
-    'y': 1045
-}
+        self.single_upgrade_button_coords = {
+            'x': sc.single_upgrade_button_x,
+            'y': sc.single_upgrade_button_y
+        }
 
-next_level_button_coords = {
-    'x': 150,
-    'y': 2900
-}
+        self.close_upgrade_button_coords = {
+            'x': sc.close_upgrade_button_x,
+            'y': sc.close_upgrade_button_y
+        }
 
-renovate_button_coords = {
-    'x': 700,
-    'y': 2200
-}
+        self.next_level_button_coords = {
+            'x': sc.next_level_button_x,
+            'y': sc.next_level_button_y
+        }
 
-ads_button_coords = {
-    'x': 720,
-    'y': 2950
-}
+        self.renovate_button_coords = {
+            'x': sc.renovate_button_x,
+            'y': sc.renovate_button_y
+        }
 
-fly_next_city_button_coords = {
-    'x': 700,
-    'y': 2050
-}
+        self.ads_button_coords = {
+            'x': sc.ads_button_x,
+            'y': sc.ads_button_y
+        }
 
-welcome_city_ok_button_coords = {
-    'x': 730,
-    'y': 1950
-}
+        self.fly_next_city_button_coords = {
+            'x': sc.fly_next_city_button_x,
+            'y': sc.fly_next_city_button_y
+        }
 
-null_click_coords = {
-    'x': 810,
-    'y': 320
-}
+        self.welcome_city_ok_button_coords = {
+            'x': sc.welcome_city_ok_button_x,
+            'y': sc.welcome_city_ok_button_y
+        }
 
-chest_coords = {
-    'x': 130,
-    'y': 845
-}
+        self.null_click_coords = {
+            'x': sc.null_click_x,
+            'y': sc.null_click_y
+        }
 
-close_chest_button_coords = {
-    'x': 1330,
-    'y': 230
-}
+        self.chest_coords = {
+            'x': sc.chest_x,
+            'y': sc.chest_y
+        }
 
+        self.close_chest_button_coords = {
+            'x': sc.close_chest_button_x,
+            'y': sc.close_chest_button_y
+        }
 
-swipe_layout_down_coords = {
-    'start': {
-        'x': 900,
-        'y': 2500
-    },
-    'end': {
-        'x': 900,
-        'y': 800
-    }
-}
+        self.swipe_layout_down_coords = {
+            'start': {
+                'x': sc.swipe_layout_down_start_x,
+                'y': sc.swipe_layout_down_start_y
+            },
+            'end': {
+                'x': sc.swipe_layout_down_end_x,
+                'y': sc.swipe_layout_down_end_y
+            }
+        }
 
-swipe_layout_up_coords = {
-    'end': {
-        'x': 900,
-        'y': 2500
-    },
-    'start': {
-        'x': 900,
-        'y': 800
-    }
-}
+        self.swipe_layout_up_coords = {
+            'start': {
+                'x': sc.swipe_layout_up_start_x,
+                'y': sc.swipe_layout_up_start_y
+            },
+            'end': {
+                'x': sc.swipe_layout_up_end_x,
+                'y': sc.swipe_layout_up_end_y
+            }
+        }
 
-swipe_layout_little_up_coords = {
-    'end': {
-        'x': 900,
-        'y': 1500
-    },
-    'start': {
-        'x': 900,
-        'y': 800
-    }
-}
+        self.swipe_layout_little_up_coords = {
+            'start': {
+                'x': sc.swipe_layout_little_up_start_x,
+                'y': sc.swipe_layout_little_up_start_y
+            },
+            'end': {
+                'x': sc.swipe_layout_little_up_end_x,
+                'y': sc.swipe_layout_little_up_end_y
+            }
+        }
 
-swipe_layout_little_down_coords = {
-    'start': {
-        'x': 900,
-        'y': 1500
-    },
-    'end': {
-        'x': 900,
-        'y': 800
-    }
-}
+        self.danger_max_y = sc.danger_max_y
+
+        self.swipe_layout_little_down_coords = {
+            'start': {
+                'x': sc.swipe_layout_little_down_start_x,
+                'y': sc.swipe_layout_little_down_start_y
+            },
+            'end': {
+                'x': sc.swipe_layout_little_down_end_x,
+                'y': sc.swipe_layout_little_down_end_y
+            }
+        }

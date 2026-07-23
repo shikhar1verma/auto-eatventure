@@ -2,6 +2,7 @@ from appium import webdriver
 from appium.webdriver.common.mobileby import MobileBy
 from appium.webdriver.common.touch_action import TouchAction
 import time
+from scaled_coords import ScaledCoords, detect_resolution_appium
 
 desired_cap = {
   "platformName": "Android",
@@ -18,8 +19,9 @@ driver.find_element(MobileBy.ID, "com.android.permissioncontroller:id/permission
 
 # start screen
 time.sleep(3)
+actual_w, actual_h = detect_resolution_appium(driver)
+sc = ScaledCoords(actual_w, actual_h)
 action = TouchAction(driver)
-x = 709
-y = 1851
+x = sc.initial_tap_x
+y = sc.initial_tap_y
 action.tap(x=x, y=y).perform()
-
