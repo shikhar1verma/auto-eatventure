@@ -350,6 +350,70 @@ class GameActions:
 
     return gone_to_next_level
 
+  def _popular_dish_button_state(self):
+    """Return 'select', 'start', 'stop' or None (grey cooldown
+    button / dialog not open) for the Popular Dish row button."""
+    x = self.sc.popular_dish_button_x
+    y = self.sc.popular_dish_button_y
+    hw = self.sc.popular_dish_button_roi_half_width_x
+    hh = self.sc.popular_dish_button_roi_half_height_y
+    roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
+    for state in ('select', 'start', 'stop'):
+      if self.matcher.is_hsv_match(
+          roi, 'popular_dish_' + state, threshold=0.9):
+        return state
+    return None
+
+  def _tap_popular_dish_button(self):
+    self.device.click(self.loc.popular_dish_button_coords)
+    time.sleep(1.5)
+    self.device.capture_screenshot()
+    return self._popular_dish_button_state()
+
+  def select_popular_dish(self):
+    """Select the first dish as Popular Dish, start it and stop it
+    right away.
+
+    Only the selection counts for the achievement, the skill
+    effect itself does not matter. Returns True when the skill
+    was stopped, i.e. its cooldown has started.
+    """
+    self.device.click(self.loc.skills_circle_coords)
+    time.sleep(1.5)
+    self.device.capture_screenshot()
+    state = self._popular_dish_button_state()
+
+    if state == 'select':
+      self.device.click(self.loc.popular_dish_button_coords)
+      time.sleep(1.5)
+      for coords in self.loc.first_dish_coords_candidates:
+        self.device.click(coords)
+        time.sleep(1.5)
+        self.device.capture_screenshot()
+        state = self._popular_dish_button_state()
+        if state == 'start':
+          break
+    if state == 'start':
+      state = self._tap_popular_dish_button()
+    if state == 'stop':
+      state = self._tap_popular_dish_button()
+      if state is None:
+        log.info('Popular Dish selected and stopped')
+        key_log.info("POPULAR DISH - Selected first dish")
+        self._close_skill_dialogs()
+        return True
+
+    log.info('Popular Dish not available (button: %s)', state)
+    self._close_skill_dialogs()
+    return False
+
+  def _close_skill_dialogs(self):
+    """Close "Select a dish" and "Active Skills" if open."""
+    self.device.capture_screenshot()
+    for _ in range(2):
+      if not self.close_accidental_popups():
+        break
+
   def redeem_investor(self):
     """Find and claim investor reward."""
     redeem_button_coords = {

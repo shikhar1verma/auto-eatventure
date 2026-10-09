@@ -23,6 +23,13 @@ setup_logging()
 log = get_logger(__name__)
 key_log = get_key_logger()
 
+# Popular Dish cooldown is ~10 min (reset by renovation / new city).
+# After a level change no dish can be selected until the first stand
+# is open, so the bot waits for the first food upgrade. Failed
+# attempts are retried sooner.
+POPULAR_DISH_COOLDOWN_S = 10 * 60 + 30
+POPULAR_DISH_RETRY_S = 60
+
 
 class AutoEatventure:
   """Main bot orchestrator."""
@@ -41,12 +48,21 @@ class AutoEatventure:
     nothing_to_update_count = 0
     new_level_started = True
     new_level_first_food_icon_swipe = False
+    popular_dish_next_try = 0
+    popular_dish_wait_for_upgrade = False
 
     while True:
       count += 1
 
       swipe_count = self.actions.handle_stale_state(
         nothing_to_update_count, swipe_count)
+
+      if (not popular_dish_wait_for_upgrade
+          and time.monotonic() >= popular_dish_next_try):
+        delay = (POPULAR_DISH_COOLDOWN_S
+                 if self.actions.select_popular_dish()
+                 else POPULAR_DISH_RETRY_S)
+        popular_dish_next_try = time.monotonic() + delay
 
       self.device.capture_screenshot()
 
@@ -73,6 +89,9 @@ class AutoEatventure:
           continue
         random.shuffle(food_icons)
         self.actions.upgrade_food_items(food_icons)
+        if popular_dish_wait_for_upgrade:
+          popular_dish_wait_for_upgrade = False
+          popular_dish_next_try = 0
       else:
         nothing_to_update_count += 1
         if count % 10 == 0:
@@ -81,6 +100,7 @@ class AutoEatventure:
             nothing_to_update_count = 0
             new_level_first_food_icon_swipe = False
             new_level_started = True
+            popular_dish_wait_for_upgrade = True
 
 
 # ── Entry point ─────────────────────────────────────────────

@@ -12,6 +12,7 @@ The main game loop lives in `AutoEatventure.start_playing_game()` at `adb_autopl
 while True:
     count += 1
     swipe_count = actions.handle_stale_state(...)
+    actions.select_popular_dish()           # when popular_dish_next_try passed
     device.capture_screenshot()
     actions.close_accidental_popups()       # every 150 iterations
     actions.try_upgrade_items(count, ...)   # every 5th iteration
@@ -31,6 +32,24 @@ while True:
 | `count % 5 == 0` | Open upgrade menu, click upgrades | `actions.try_upgrade_items()` |
 | `count % 10 == 0` (no food) | Check next level / city | `actions.check_to_go_next_level()` |
 | `count % 150 == 0` | Close accidental popups | `actions.close_accidental_popups()` |
+| `popular_dish_next_try` passed | Select first dish as Popular Dish, Start + Stop at once | `actions.select_popular_dish()` |
+
+### Popular Dish (achievement farming)
+
+Only the selection counts for the achievement, so the bot selects the
+first dish, starts the skill and stops it right away. Flow: skill
+circle (top center) -> Active Skills -> Select -> first dish tile ->
+Start -> Stop -> close dialogs with `close_accidental_popups()`.
+Every tap is verified by the Select/Start/Stop templates.
+
+- Success: next try after `POPULAR_DISH_COOLDOWN_S` (10.5 min cooldown)
+- Failure (cooldown, no stand open yet): retry after
+  `POPULAR_DISH_RETRY_S` (60 s)
+- Renovation / new city resets the game cooldown, but no dish can be
+  selected before the first stand is open, so the next try waits for
+  the first food upgrade (`popular_dish_wait_for_upgrade`)
+- The dish grid is centered with max 3 tiles per row, so the first
+  tile's x depends on the dish count; all positions are tried in order
 
 ## Stale State Recovery
 
@@ -59,7 +78,7 @@ before reversing.
 3. Open all chests (recursive)
 
 ### After transition:
-Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_started=True`, `new_level_first_food_icon_swipe=False`
+Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_started=True`, `new_level_first_food_icon_swipe=False`, `popular_dish_wait_for_upgrade=True`
 
 ## Food Upgrade Logic
 
