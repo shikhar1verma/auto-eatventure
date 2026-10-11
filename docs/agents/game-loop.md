@@ -167,8 +167,11 @@ Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_f
    (`is_first_upgrade_affordable()`): blue = buy more, grey = too
    expensive, close the menu. At most `UPGRADE_MAX_CLICKS` (50) taps
    (a new level has many cheap upgrades).
+4. After closing, the bot waits `UPGRADE_DIALOG_CLOSE_DELAY_S`
+   (0.8 s) for the dialog to fade out before the next screenshot;
+   otherwise the food icons are hidden and the stations are skipped.
 
-A usual visit takes ~2-3 s (3 taps + 1 check). Before, the menu was
+A usual visit takes ~3 s (3 taps + 1 check). Before, the menu was
 opened only every 5th iteration (~1 min with several stations, as
 each station takes ~4 s) and tapped blindly 10x (~4.7 s; 50x
 after a new level).

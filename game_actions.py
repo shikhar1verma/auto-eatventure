@@ -64,6 +64,10 @@ UPGRADE_BUY_MIN_RATIO = 0.3
 # check of the first row, up to UPGRADE_MAX_CLICKS (a new level)
 UPGRADE_CLICKS_PER_CHECK = 3
 UPGRADE_MAX_CLICKS = 50
+# The closed Upgrades dialog fades out for ~0.6 s; a screenshot taken
+# meanwhile hides the food icons (with the badge still shown, the next
+# loops kept missing the stations and went stale)
+UPGRADE_DIALOG_CLOSE_DELAY_S = 0.8
 
 POPULAR_DISH_BUTTON_TEMPLATES = {
   'select': 'popular_dish_select',
@@ -425,6 +429,7 @@ class GameActions:
         break
     log.info('Upgrade taps: %d', clicks)
     self.device.click(self.loc.close_upgrade_button_coords)
+    time.sleep(UPGRADE_DIALOG_CLOSE_DELAY_S)
 
   def open_chests(self):
     """Recursively open all available chests."""
