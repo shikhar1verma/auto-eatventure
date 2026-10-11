@@ -164,6 +164,7 @@ class AutoEatventure:
 
 # ── Entry point ─────────────────────────────────────────────
 
+log.info('START - Bot started')
 bot = AutoEatventure()
 bot.device.start_app()
 bot.actions.init_game()
