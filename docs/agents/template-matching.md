@@ -59,6 +59,7 @@ All templates are in `matching_screenshots/` and registered in `TemplateMatcher.
 | Template | Detection Method (in `game_actions.py`) | Strategy | Threshold |
 |----------|----------------------------------------|----------|-----------|
 | `notification.png` | `is_having_notification()` | HSV | 0.8 |
+| `open_button.png` | `is_having_open_button()` (first stand after renovate / fly) | HSV | 0.9 |
 | `settings.png` | `is_having_settings()` | HSV | 0.8 |
 | `offline_earnings.png` | `is_having_offline_earnings()` | HSV | 0.8 |
 | `upgrade_button.png` | `is_having_upgrade()` | HSV | 0.97 |

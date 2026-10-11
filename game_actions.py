@@ -23,6 +23,13 @@ SWIPES_PER_DIRECTION = 7
 STALE_RESTART_THRESHOLD = 50
 STALE_SWIPE_THRESHOLD = 15
 
+# The "Open" dialog of the first stand appears after the renovate /
+# fly animation, which is slow on some phones. It is awaited up to
+# this long; then it is tapped blindly (e.g. closed by hand).
+OPEN_BUTTON_TIMEOUT_S = 45
+# Delay before tapping, so the dialog finishes its pop-in animation
+OPEN_BUTTON_TAP_DELAY_S = 1
+
 # Time for the Active Skills / Select a dish dialogs to animate
 SKILL_DIALOG_DELAY_S = 1.5
 
@@ -73,6 +80,10 @@ class GameActions:
   def is_having_upgrade(self):
     return self.matcher.is_hsv_match(
       self._hsv(), 'upgrade_button', threshold=0.97)
+
+  def is_having_open_button(self):
+    return self.matcher.is_hsv_match(
+      self._hsv(), 'open_button', threshold=0.9)
 
   def is_having_next_level_icon(self):
     return self.matcher.is_hsv_match(
@@ -335,14 +346,7 @@ class GameActions:
       self.device.click(self.loc.next_level_button_coords)
       time.sleep(2)
       self.device.click(self.loc.renovate_button_coords)
-      # Was 10 s. +4 s only because of a slow phone: the renovate
-      # animation sometimes didn't finish in time, the click missed
-      # the button and the game stayed stuck on it forever.
-      # Better fix: capture a template of the button and wait for it
-      # to appear instead of sleeping a fixed time.
-      time.sleep(14)
-      self.device.click(
-        self.loc.first_lemonade_stand_open_coords)
+      self._wait_and_click_open_button()
       gone_to_next_level = True
       key_log.info("NEXT LEVEL - Renovated to next level")
 
@@ -360,9 +364,7 @@ class GameActions:
       time.sleep(19)
       self.device.click(
         self.loc.welcome_city_ok_button_coords)
-      time.sleep(5)
-      self.device.click(
-        self.loc.first_lemonade_stand_open_coords)
+      self._wait_and_click_open_button()
       time.sleep(5)
       gone_to_next_level = True
       key_log.info("FLY - Flying to next city")
@@ -371,6 +373,27 @@ class GameActions:
       self.open_chests()
 
     return gone_to_next_level
+
+  def _wait_and_click_open_button(self):
+    """Wait for the "Open" button of the first stand and tap it.
+
+    If it doesn't show up in time, tap its position anyway and log
+    a warning, the bot then continues.
+    """
+    deadline = time.monotonic() + OPEN_BUTTON_TIMEOUT_S
+    while True:
+      self.device.capture_screenshot()
+      if self.is_having_open_button():
+        time.sleep(OPEN_BUTTON_TAP_DELAY_S)
+        break
+      if time.monotonic() >= deadline:
+        log.warning(
+          'Open button not found within %d s, tapping it blindly. '
+          'This should not normally happen.', OPEN_BUTTON_TIMEOUT_S)
+        key_log.warning("WARNING - Open button not found")
+        break
+      time.sleep(1)
+    self.device.click(self.loc.first_lemonade_stand_open_coords)
 
   def select_popular_dish(self):
     """Select the first dish as Popular Dish, start the skill and

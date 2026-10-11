@@ -88,6 +88,8 @@ A separate file recording only key milestones. Useful for tracking progress (e.g
 | `NEXT LEVEL` | Renovated to next level (same city) | `NEXT LEVEL - Renovated to next level` |
 | `FLY` | Flying to a new city/restaurant | `FLY - Flying to next city` |
 | `RESTART` | Stale state triggers app restart | `RESTART - Stale state, restarting app` |
+| `POPULAR DISH` | Popular Dish selected and stopped (optional) | `POPULAR DISH - Selected first dish` |
+| `WARNING` | First stand's "Open" button not found after renovate / fly (should not normally happen) | `WARNING - Open button not found` |
 
 ### Usage:
 
