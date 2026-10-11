@@ -116,6 +116,25 @@ class Constants:
             'y': sc.close_chest_button_y
         }
 
+        self.skills_circle_coords = {
+            'x': sc.skills_circle_x,
+            'y': sc.skills_circle_y
+        }
+
+        self.popular_dish_button_coords = {
+            'x': sc.popular_dish_button_x,
+            'y': sc.popular_dish_button_y
+        }
+
+        # Tapping a gap or a grey (unavailable) tile does nothing,
+        # so the candidates are tried in order until one selects
+        self.first_dish_coords_candidates = [
+            {'x': x, 'y': sc.first_dish_y}
+            for x in (sc.first_dish_3_tiles_x,
+                      sc.first_dish_2_tiles_x,
+                      sc.first_dish_1_tile_x)
+        ]
+
         self.swipe_layout_down_coords = {
             'start': {
                 'x': sc.swipe_layout_down_start_x,

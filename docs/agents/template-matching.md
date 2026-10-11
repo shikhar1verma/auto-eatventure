@@ -71,6 +71,7 @@ All templates are in `matching_screenshots/` and registered in `TemplateMatcher.
 | `investor.png` | `is_having_investor()` | Color-masked | 0.65 |
 | `chest_icon.png` | `is_having_chest_icon()` | HSV | 0.8 |
 | `popup_close_cross.png` | `close_accidental_popups()` | HSV | 0.8 |
+| `popular_dish_select.png`, `popular_dish_start.png`, `popular_dish_stop.png` | `get_popular_dish_button_state()` (ROI around the Popular Dish button) | HSV | 0.9 |
 | `no_boost_indicator_2x.png` | (available) | HSV | 0.92 |
 | `ads_crosses/cross1.png` | (available) | Grayscale | 0.8 |
 

@@ -84,6 +84,12 @@ class TemplateMatcher:
         './matching_screenshots/chest_icon.png',
       'popup_close_cross':
         './matching_screenshots/popup_close_cross.png',
+      'popular_dish_select':
+        './matching_screenshots/popular_dish_select.png',
+      'popular_dish_start':
+        './matching_screenshots/popular_dish_start.png',
+      'popular_dish_stop':
+        './matching_screenshots/popular_dish_stop.png',
       'ads_crosses': {
         'cross1':
           './matching_screenshots/ads_crosses/cross1.png',

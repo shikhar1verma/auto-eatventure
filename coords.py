@@ -77,6 +77,32 @@ chest_y = 734
 close_chest_button_x = 1127
 close_chest_button_y = 200
 
+# ── Active Skills / Popular Dish ──────────────────────────────────────────────
+# Black skill circle at the top center opens the Active Skills dialog.
+# Single circle while all skills are ready (cooldown resets on every
+# renovation / fly to a new city); it splits into two circles while
+# Popular Dish is active or cooling down.
+
+skills_circle_x = 610
+skills_circle_y = 325
+
+# Select / Start / Stop button of the Popular Dish row (same position)
+popular_dish_button_x = 942
+popular_dish_button_y = 1385
+
+# Search area around the button: keeps the Sold Out row's own Select
+# button (~305px lower) out of the match
+popular_dish_button_roi_half_width_x = 175
+popular_dish_button_roi_half_height_y = 90
+
+# First (leftmost) tile in the "Select a dish" dialog. The grid has up
+# to 3 tiles per row and is centered, so the first tile moves with the
+# number of dishes: 3+ dishes / 2 dishes / 1 dish.
+first_dish_3_tiles_x = 360
+first_dish_2_tiles_x = 486
+first_dish_1_tile_x = 610
+first_dish_y = 1304
+
 # ── Swipe Coordinates ─────────────────────────────────────────────────────────
 # Distance kept to 650px: the usable playfield height (excluding side
 # buttons/ad banner zones) is only ~820px, so a swipe close to that

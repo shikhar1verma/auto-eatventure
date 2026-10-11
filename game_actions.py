@@ -23,6 +23,15 @@ SWIPES_PER_DIRECTION = 7
 STALE_RESTART_THRESHOLD = 50
 STALE_SWIPE_THRESHOLD = 15
 
+# Time for the Active Skills / Select a dish dialogs to animate
+SKILL_DIALOG_DELAY_S = 1.5
+
+POPULAR_DISH_BUTTON_TEMPLATES = {
+  'select': 'popular_dish_select',
+  'start': 'popular_dish_start',
+  'stop': 'popular_dish_stop',
+}
+
 
 class GameActions:
   """Game action methods that operate on a Device and
@@ -98,6 +107,19 @@ class GameActions:
       self.matcher.templates['investor']['simple'])
     return self.matcher.find_template(
       sc, template, 0.65) is not None
+
+  def get_popular_dish_button_state(self):
+    """Return 'select', 'start', 'stop' or None (grey cooldown
+    button / dialog not open) for the Popular Dish row button."""
+    x = self.sc.popular_dish_button_x
+    y = self.sc.popular_dish_button_y
+    hw = self.sc.popular_dish_button_roi_half_width_x
+    hh = self.sc.popular_dish_button_roi_half_height_y
+    roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
+    for state, template_key in POPULAR_DISH_BUTTON_TEMPLATES.items():
+      if self.matcher.is_hsv_match(roi, template_key, threshold=0.9):
+        return state
+    return None
 
   # ── Game actions ──────────────────────────────────────────
 
@@ -349,6 +371,65 @@ class GameActions:
       self.open_chests()
 
     return gone_to_next_level
+
+  def select_popular_dish(self):
+    """Select the first dish as Popular Dish, start the skill and
+    stop it right away.
+
+    The skill effect is not used, only the selection counts for
+    the Masterchef quest. Returns True when the skill was stopped,
+    i.e. its cooldown has started.
+    """
+    # The button goes select -> start -> stop -> grey (cooldown).
+    # Each step continues from the state found, so an attempt
+    # interrupted earlier is finished as well.
+    state = self._tap_and_get_popular_dish_button_state(
+      self.loc.skills_circle_coords)
+    if state == 'select':
+      state = self._choose_first_dish()
+    if state == 'start':
+      state = self._tap_and_get_popular_dish_button_state(
+        self.loc.popular_dish_button_coords)
+    stopped = False
+    if state == 'stop':
+      stopped = self._tap_and_get_popular_dish_button_state(
+        self.loc.popular_dish_button_coords) is None
+
+    if stopped:
+      log.info('Popular Dish selected and stopped')
+      key_log.info("POPULAR DISH - Selected first dish")
+    else:
+      log.info('Popular Dish not selected (button: %s)', state)
+    self._close_skill_dialogs()
+    return stopped
+
+  def _choose_first_dish(self):
+    """Open "Select a dish" and tap the first selectable dish.
+
+    Returns the Popular Dish button state afterwards, 'start' when
+    a dish was chosen.
+    """
+    self.device.click(self.loc.popular_dish_button_coords)
+    time.sleep(SKILL_DIALOG_DELAY_S)
+    for coords in self.loc.first_dish_coords_candidates:
+      state = self._tap_and_get_popular_dish_button_state(coords)
+      if state == 'start':
+        return state
+    log.info('No dish to select yet (no stand open)')
+    return None
+
+  def _tap_and_get_popular_dish_button_state(self, coords):
+    self.device.click(coords)
+    time.sleep(SKILL_DIALOG_DELAY_S)
+    self.device.capture_screenshot()
+    return self.get_popular_dish_button_state()
+
+  def _close_skill_dialogs(self):
+    """Close "Select a dish" and "Active Skills" if open."""
+    self.device.capture_screenshot()
+    for _ in range(2):
+      if not self.close_accidental_popups():
+        break
 
   def redeem_investor(self):
     """Find and claim investor reward."""
