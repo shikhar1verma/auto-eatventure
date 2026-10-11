@@ -155,26 +155,28 @@ Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_f
 `GameActions.try_upgrade_items()` / `do_upgrades()` in
 `game_actions.py`:
 
-1. Every iteration the loop screenshot is checked for the red badge
-   on the upgrade button (bottom right), shown while an upgrade can
-   be bought. The badge pulses (size, tilt), so its red pixels are
-   counted (`is_having_upgrade()`); template matching missed ~1/3 of
-   the frames.
-2. The menu is opened and the first row's buy button is tapped in
-   rounds of `UPGRADE_CLICKS_PER_CHECK` (3). A bought upgrade leaves
-   the list and the next one moves to the first row.
-3. After each round a screenshot checks the first row's buy button
-   (`is_first_upgrade_affordable()`): blue = buy more, grey = too
-   expensive, close the menu. At most `UPGRADE_MAX_CLICKS` (50) taps
-   (a new level has many cheap upgrades).
-4. After closing, the bot waits `UPGRADE_DIALOG_CLOSE_DELAY_S`
+1. Every iteration that reaches the upgrade step (Food Delivery /
+   helper invites end an iteration early) checks the loop screenshot
+   for the red badge on the upgrade button (bottom right), shown
+   while an upgrade can be bought. The badge pulses (size, tilt), so
+   its red pixels are counted (`is_having_upgrade()`); template
+   matching missed ~1/3 of the frames.
+2. The menu is opened (`UPGRADE_DIALOG_OPEN_DELAY_S`, 0.5 s) and,
+   before every round, a screenshot checks the first row's buy button
+   (`is_first_upgrade_affordable()`): blue = tap it
+   `UPGRADE_CLICKS_PER_CHECK` (3) times, grey = too expensive, close
+   the menu. A bought upgrade leaves the list and the next one moves
+   to the first row. A dialog that did not open gets no taps. At most
+   `UPGRADE_MAX_CLICKS` (51) taps (a new level has many cheap
+   upgrades).
+3. After closing, the bot waits `UPGRADE_DIALOG_CLOSE_DELAY_S`
    (0.8 s) for the dialog to fade out before the next screenshot;
    otherwise the food icons are hidden and the stations are skipped.
 
-A usual visit takes ~3 s (3 taps + 1 check). Before, the menu was
-opened only every 5th iteration (~1 min with several stations, as
-each station takes ~4 s) and tapped blindly 10x (~4.7 s; 50x
-after a new level).
+A usual visit takes ~4 s (2 checks + 3 taps + fade-out). Before, the
+menu was opened only every 5th iteration (~1 min with several
+stations, as each station takes ~4 s) and tapped blindly 10x
+(~4.7 s; 50x after a new level).
 
 ## Food Upgrade Logic
 

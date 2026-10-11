@@ -60,10 +60,12 @@ UPGRADE_BADGE_MIN_RATIO = 0.05
 # next one moves to the first row)
 UPGRADE_BUY_BLUE = [((95, 120, 200), (110, 255, 255))]
 UPGRADE_BUY_MIN_RATIO = 0.3
-# Upgrades are bought in rounds of this many taps, each followed by a
+# Upgrades are bought in rounds of this many taps, each preceded by a
 # check of the first row, up to UPGRADE_MAX_CLICKS (a new level)
 UPGRADE_CLICKS_PER_CHECK = 3
-UPGRADE_MAX_CLICKS = 50
+UPGRADE_MAX_CLICKS = 51
+# Time for the Upgrades dialog to pop in before the first check
+UPGRADE_DIALOG_OPEN_DELAY_S = 0.5
 # The closed Upgrades dialog fades out for ~0.6 s; a screenshot taken
 # meanwhile hides the food icons (with the badge still shown, the next
 # loops kept missing the stations and went stale)
@@ -414,19 +416,22 @@ class GameActions:
 
   def do_upgrades(self):
     """Open the upgrade menu and buy the first row's upgrade while it
-    is affordable, in rounds of UPGRADE_CLICKS_PER_CHECK taps."""
+    is affordable, in rounds of UPGRADE_CLICKS_PER_CHECK taps.
+
+    The first check also covers a dialog that did not open: nothing is
+    tapped then."""
     self.device.click(self.loc.upgrade_button_coords)
-    time.sleep(0.3)
+    time.sleep(UPGRADE_DIALOG_OPEN_DELAY_S)
     clicks = 0
     while clicks < UPGRADE_MAX_CLICKS:
+      self.device.capture_screenshot()
+      if not self.is_first_upgrade_affordable():
+        break
       for _ in range(UPGRADE_CLICKS_PER_CHECK):
         self.device.click(
           self.loc.single_upgrade_button_coords)
         time.sleep(0.2)
       clicks += UPGRADE_CLICKS_PER_CHECK
-      self.device.capture_screenshot()
-      if not self.is_first_upgrade_affordable():
-        break
     log.info('Upgrade taps: %d', clicks)
     self.device.click(self.loc.close_upgrade_button_coords)
     time.sleep(UPGRADE_DIALOG_CLOSE_DELAY_S)
