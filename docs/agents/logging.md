@@ -61,7 +61,10 @@ from logger import setup_logging
 setup_logging()
 ```
 
-This is done in `adb_autoplay.py` (the entry point).
+This is done in `adb_autoplay.py` (the entry point). Its first log
+line is `START - Bot started`, so every bot start is easy to find
+in `autoplay.log` (the key events log gets its own `START` entry
+once the game is initialized).
 
 ## File Output
 
