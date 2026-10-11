@@ -84,7 +84,7 @@ iteration then ends (`continue`), so its other steps are skipped.
 - The button moves up when the button above it is missing, so it is
   searched in an area and tapped at the found y
 - Left column buttons (truck, helper) are tapped at
-  `side_button_tap_x` (120), right of their center: on some phones
+  `side_button_tap_x`, right of their center: on some phones
   (OnePlus Nord 3) the column is partly hidden behind the screen edge
   and taps on the buttons' left part are ignored
 - After any attempt the checks pause for `FOOD_DELIVERY_PAUSE_S`

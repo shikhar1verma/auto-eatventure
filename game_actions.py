@@ -51,10 +51,11 @@ HELPER_AVAILABLE_MAX_DIFF = 0.015
 # Red badge on the upgrade button = an upgrade can be bought. It
 # pulses (size, tilt), which made template matching miss ~1/3 of the
 # frames, so its red pixels are counted (red wraps around hue 180).
-# The badge covers ~20% of its area, 0% when it is not shown.
+# The badge covers ~21-30% of its area, 0% when it is not shown; red
+# food in customers' bubbles behind the area reached ~5%.
 UPGRADE_BADGE_RED = [((0, 120, 150), (8, 255, 255)),
                      ((172, 120, 150), (180, 255, 255))]
-UPGRADE_BADGE_MIN_RATIO = 0.05
+UPGRADE_BADGE_MIN_RATIO = 0.12
 # Buy button of the first row in the Upgrades dialog: blue while
 # affordable, grey when not (bought upgrades leave the list, so the
 # next one moves to the first row)

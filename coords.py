@@ -121,7 +121,8 @@ first_dish_y = 1304
 
 # ── Left button column ────────────────────────────────────────────────────────
 # Taps on the left button column (helper, Food Delivery truck) use this
-# x, right of the buttons' center (~75). On some phones (OnePlus Nord 3)
+# x, right of the buttons' center (~75). Not side_button_zone_width_x,
+# which keeps food taps away from the side buttons. On some phones (OnePlus Nord 3)
 # the column is partly hidden behind the screen edge and taps on the
 # buttons' left part (< ~90) are ignored.
 side_button_tap_x = 120
