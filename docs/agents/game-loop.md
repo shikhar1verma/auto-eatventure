@@ -32,11 +32,13 @@ while True:
 | `count % 5 == 0` | Open upgrade menu, click upgrades | `actions.try_upgrade_items()` |
 | `count % 10 == 0` (no food) | Check next level / city | `actions.check_to_go_next_level()` |
 | `count % 150 == 0` | Close accidental popups | `actions.close_accidental_popups()` |
-| `popular_dish_next_try` passed | Select first dish as Popular Dish, Start + Stop at once | `actions.select_popular_dish()` |
+| `POPULAR_DISH_ENABLED` and `popular_dish_next_try` passed | Select first dish as Popular Dish, Start + Stop at once | `actions.select_popular_dish()` |
 
-### Popular Dish (achievement farming)
+### Popular Dish (Masterchef quest farming, optional)
 
-Only the selection counts for the achievement, so the bot selects the
+Disabled by default; enable with `POPULAR_DISH_ENABLED="1"` in `.env`.
+It is only useful for the Masterchef quest that counts Popular Dish
+selections - the skill effect is not used, so the bot selects the
 first dish, starts the skill and stops it right away. Flow: skill
 circle (top center) -> Active Skills -> Select -> first dish tile ->
 Start -> Stop -> close dialogs with `close_accidental_popups()`.

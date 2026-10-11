@@ -210,6 +210,14 @@ Command: `sudo apt-get install android-sdk-platform-tools`
 
     There is one more script autoplay.py that is a failed attempt as I was trying to directly run the game through UI elements.
 
+## Optional Features
+
+Optional features are switched on in `.env` (see `.env-sample`). All are off by default.
+
+| Setting | What it does |
+|---------|--------------|
+| `POPULAR_DISH_ENABLED="1"` | Selects the **Popular Dish** active skill (first dish), starts it and immediately stops it again. The skill effect is not used at all; it is only useful to complete the **Masterchef quest** for selecting a popular dish. Repeats after every renovation / new city (once the first stand is open) and every ~10 min (skill cooldown). |
+
 
 ## Documentation
 

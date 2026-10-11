@@ -55,6 +55,10 @@ DEBUG_TEMPLATE_MATCHING="0"
 # Optional: override auto-computed template scale factor
 TEMPLATE_SCALE_OVERRIDE=""
 
+# Optional: "1" = select Popular Dish and stop it right away, only to
+# complete the Masterchef "select a popular dish" quest. Default off.
+POPULAR_DISH_ENABLED="0"
+
 # Logging: console level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 LOG_LEVEL="INFO"
 

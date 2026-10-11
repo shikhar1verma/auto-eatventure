@@ -6,6 +6,7 @@ All implementation details live in device.py,
 template_matcher.py, and game_actions.py.
 """
 
+import os
 import time
 import random
 
@@ -22,6 +23,12 @@ from game_actions import GameActions
 setup_logging()
 log = get_logger(__name__)
 key_log = get_key_logger()
+
+# Optional: select the Popular Dish skill (and stop it right away)
+# only to farm the Masterchef quest for selecting a popular dish.
+# Off by default, it has no gameplay benefit.
+POPULAR_DISH_ENABLED = os.getenv(
+  "POPULAR_DISH_ENABLED", "0").strip() == "1"
 
 # Popular Dish cooldown is ~10 min (reset by renovation / new city).
 # After a level change no dish can be selected until the first stand
@@ -57,7 +64,8 @@ class AutoEatventure:
       swipe_count = self.actions.handle_stale_state(
         nothing_to_update_count, swipe_count)
 
-      if (not popular_dish_wait_for_upgrade
+      if (POPULAR_DISH_ENABLED
+          and not popular_dish_wait_for_upgrade
           and time.monotonic() >= popular_dish_next_try):
         delay = (POPULAR_DISH_COOLDOWN_S
                  if self.actions.select_popular_dish()
@@ -109,4 +117,6 @@ bot = AutoEatventure()
 bot.device.start_app()
 bot.actions.init_game()
 key_log.info("START - Bot started")
+log.info('Popular Dish selection: %s',
+         'enabled' if POPULAR_DISH_ENABLED else 'disabled')
 bot.start_playing_game()
