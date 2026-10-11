@@ -140,6 +140,16 @@ class Constants:
             'y': sc.food_delivery_accept_y
         }
 
+        self.helper_button_coords = {
+            'x': sc.helper_button_x,
+            'y': sc.helper_button_y
+        }
+
+        self.helper_invite_coords = {
+            'x': sc.helper_invite_x,
+            'y': sc.helper_invite_y
+        }
+
         self.swipe_layout_down_coords = {
             'start': {
                 'x': sc.swipe_layout_down_start_x,

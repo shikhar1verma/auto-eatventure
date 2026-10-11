@@ -117,6 +117,23 @@ food_delivery_accept_y = 1166
 food_delivery_accept_roi_half_width_x = 147
 food_delivery_accept_roi_half_height_y = 79
 
+# ── Invite a Helper ───────────────────────────────────────────────────────────
+# Helper (person) button, the top one in the left button column
+helper_button_x = 75
+helper_button_y = 434
+# Search area of the "available" template (lower part of the button:
+# person's body + the empty line where a countdown / ad icon would be)
+helper_roi_left_x = 0
+helper_roi_right_x = 170
+helper_roi_top_y = 400
+helper_roi_bottom_y = 560
+
+# Invite button of the first helper in the "Invite a helper" dialog
+helper_invite_x = 804
+helper_invite_y = 1019
+helper_invite_roi_half_width_x = 147
+helper_invite_roi_half_height_y = 79
+
 # ── Swipe Coordinates ─────────────────────────────────────────────────────────
 # Distance kept to 650px: the usable playfield height (excluding side
 # buttons/ad banner zones) is only ~820px, so a swipe close to that

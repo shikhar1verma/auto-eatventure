@@ -48,6 +48,18 @@ FOOD_DELIVERY_ENABLED = os.getenv(
 # its cooldown take longer than the pause anyway.
 FOOD_DELIVERY_PAUSE_S = 60
 
+# Optional: invite the first helper whenever one can be invited. On by
+# default.
+HELPER_INVITE_ENABLED = os.getenv(
+  "HELPER_INVITE_ENABLED", "1").strip() == "1"
+
+# Same pause as for Food Delivery. A helper works ~4 min and the
+# cooldown is ~30 min, so it never delays a real invite. A failed
+# attempt costs up to ~15 s (the list may not load at all, e.g.
+# offline), so it is retried much later.
+HELPER_INVITE_PAUSE_S = 60
+HELPER_INVITE_RETRY_S = 10 * 60
+
 
 class AutoEatventure:
   """Main bot orchestrator."""
@@ -66,6 +78,13 @@ class AutoEatventure:
              else POPULAR_DISH_RETRY_S)
     return time.monotonic() + delay
 
+  def _invite_helper(self):
+    """Invite a helper; return the time of the next try."""
+    delay = (HELPER_INVITE_PAUSE_S
+             if self.actions.invite_helper()
+             else HELPER_INVITE_RETRY_S)
+    return time.monotonic() + delay
+
   def start_playing_game(self):
     """Main game loop — runs indefinitely."""
     count = 0
@@ -76,6 +95,7 @@ class AutoEatventure:
     popular_dish_next_try = 0
     popular_dish_wait_for_upgrade = False
     food_delivery_next_try = 0
+    helper_invite_next_try = 0
 
     while True:
       count += 1
@@ -98,6 +118,12 @@ class AutoEatventure:
           food_delivery_next_try = (
             time.monotonic() + FOOD_DELIVERY_PAUSE_S)
           continue
+
+      if (HELPER_INVITE_ENABLED
+          and time.monotonic() >= helper_invite_next_try
+          and self.actions.is_having_helper_available()):
+        helper_invite_next_try = self._invite_helper()
+        continue
 
       if count % 150 == 0:
         self.actions.close_accidental_popups()
@@ -146,4 +172,6 @@ log.info('Popular Dish selection: %s',
          'enabled' if POPULAR_DISH_ENABLED else 'disabled')
 log.info('Food Delivery: %s',
          'enabled' if FOOD_DELIVERY_ENABLED else 'disabled')
+log.info('Helper invite: %s',
+         'enabled' if HELPER_INVITE_ENABLED else 'disabled')
 bot.start_playing_game()

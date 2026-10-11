@@ -15,6 +15,7 @@ while True:
     actions.select_popular_dish()           # when popular_dish_next_try passed
     device.capture_screenshot()
     actions.accept_food_delivery(...)       # truck available -> continue
+    actions.invite_helper()                 # helper available -> continue
     actions.close_accidental_popups()       # every 150 iterations
     actions.try_upgrade_items(count, ...)   # every 5th iteration
     actions.open_boxes()                    # every 2nd iteration
@@ -34,6 +35,7 @@ while True:
 | `count % 10 == 0` (no food) | Check next level / city | `actions.check_to_go_next_level()` |
 | `count % 150 == 0` | Close accidental popups | `actions.close_accidental_popups()` |
 | `FOOD_DELIVERY_ENABLED` and truck available | Accept the first Food Delivery order | `actions.accept_food_delivery()` |
+| `HELPER_INVITE_ENABLED` and helper available | Invite the first helper | `actions.invite_helper()` |
 | `POPULAR_DISH_ENABLED` and `popular_dish_next_try` passed | Select first dish as Popular Dish, Start + Stop at once | `actions.select_popular_dish()` |
 
 ### Popular Dish (Masterchef quest farming, optional)
@@ -77,6 +79,30 @@ iteration then ends (`continue`), so its other steps are skipped.
   `close_accidental_popups()`
 - Success is logged only to `autoplay.log` (too frequent for
   `key_events.log`)
+
+### Invite a helper (on by default)
+
+Enabled by default; disable with `HELPER_INVITE_ENABLED="0"` in `.env`.
+Works like Food Delivery: the loop screenshot is checked for an
+available helper (person) button, the top button of the left column
+(`is_having_helper_available()`). If found, `invite_helper()` taps it,
+waits up to `HELPER_DIALOG_TIMEOUT_S` (10 s) for the list of the
+"Invite a helper" dialog ("Loading..." first) and taps the first
+helper's Invite. The dialog closes by itself.
+
+- Button states: available (black person, nothing under it), working
+  (black + green countdown, ~4 min), ad offer (black + blue ad icon,
+  ~30 s, never tapped), cooldown (grey + "29m 59s", ~30 min)
+- The "!" badge in the button corner pulses and is outside the
+  template; the template covers the line under the person, which
+  tells the states apart
+- Availability is confirmed on a second screenshot 1 s later, so a
+  frame caught between two states can't tap the ad offer
+- After a success the checks pause for `HELPER_INVITE_PAUSE_S`
+  (60 s), after a failure for `HELPER_INVITE_RETRY_S` (10 min; a
+  list that doesn't load costs ~15 s); failures close the dialog with
+  `close_accidental_popups()`
+- Success is logged only to `autoplay.log`
 
 ## Stale State Recovery
 

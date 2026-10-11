@@ -36,6 +36,15 @@ SKILL_DIALOG_DELAY_S = 1.5
 # Time for the Food Delivery dialog to open / close
 FOOD_DELIVERY_DIALOG_DELAY_S = 1.5
 
+# The "Invite a helper" dialog shows "Loading..." for a few seconds
+# before the helper list appears; it is awaited up to this long
+HELPER_DIALOG_TIMEOUT_S = 10
+# Time for the "Invite a helper" dialog to close after Invite
+HELPER_DIALOG_DELAY_S = 1.5
+# Max SQDIFF of the "available" helper button. Lower than the default:
+# the black person with only an ad icon under it scores ~0.03.
+HELPER_AVAILABLE_MAX_DIFF = 0.015
+
 POPULAR_DISH_BUTTON_TEMPLATES = {
   'select': 'popular_dish_select',
   'start': 'popular_dish_start',
@@ -161,6 +170,29 @@ class GameActions:
     roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
     return self.matcher.is_hsv_match(
       roi, 'food_delivery_accept', threshold=0.9)
+
+  def is_having_helper_available(self):
+    """Helper button shows a black person with nothing under it (no
+    green work countdown, no ad offer, not grey cooldown)."""
+    left = self.sc.helper_roi_left_x
+    right = self.sc.helper_roi_right_x
+    top = self.sc.helper_roi_top_y
+    bottom = self.sc.helper_roi_bottom_y
+    roi = self._bgr()[top:bottom, left:right]
+    return self.matcher.match_bgr_sqdiff(
+      roi, 'helper_available',
+      max_diff=HELPER_AVAILABLE_MAX_DIFF) is not None
+
+  def is_having_helper_invite(self):
+    """Invite button of the first helper in the "Invite a helper"
+    dialog."""
+    x = self.sc.helper_invite_x
+    y = self.sc.helper_invite_y
+    hw = self.sc.helper_invite_roi_half_width_x
+    hh = self.sc.helper_invite_roi_half_height_y
+    roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
+    return self.matcher.is_hsv_match(
+      roi, 'helper_invite', threshold=0.8)
 
   # ── Game actions ──────────────────────────────────────────
 
@@ -506,6 +538,44 @@ class GameActions:
       return False
     log.info('Food Delivery accepted (first order)')
     return True
+
+  def invite_helper(self):
+    """Open "Invite a helper" and invite the first helper.
+
+    The helper works for ~4 min, then the button offers an ad (never
+    tapped) and a ~30 min cooldown follows. The dialog closes by
+    itself after Invite. Returns True when the helper was invited.
+    """
+    # Confirm on a fresh screenshot, so a frame caught between two
+    # states (e.g. countdown -> ad offer) doesn't tap the ad offer
+    time.sleep(1)
+    self.device.capture_screenshot()
+    if not self.is_having_helper_available():
+      log.info('Helper button no longer available')
+      return False
+    self.device.click(self.loc.helper_button_coords)
+    if not self._wait_for_helper_invite():
+      log.info('Invite a helper dialog not found')
+      self.close_accidental_popups()
+      return False
+    self.device.click(self.loc.helper_invite_coords)
+    time.sleep(HELPER_DIALOG_DELAY_S)
+    self.device.capture_screenshot()
+    if self.is_having_helper_invite():
+      log.info('Invite a helper dialog still open after Invite')
+      self.close_accidental_popups()
+      return False
+    log.info('Helper invited (first helper)')
+    return True
+
+  def _wait_for_helper_invite(self):
+    deadline = time.monotonic() + HELPER_DIALOG_TIMEOUT_S
+    while time.monotonic() < deadline:
+      time.sleep(1)
+      self.device.capture_screenshot()
+      if self.is_having_helper_invite():
+        return True
+    return False
 
   def redeem_investor(self):
     """Find and claim investor reward."""

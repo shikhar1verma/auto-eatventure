@@ -63,6 +63,10 @@ POPULAR_DISH_ENABLED="0"
 # available (mainly for the Food Delivery quest). Default off.
 FOOD_DELIVERY_ENABLED="0"
 
+# Optional: "0" = don't invite the first helper whenever one can be
+# invited. Default on.
+HELPER_INVITE_ENABLED="1"
+
 # Logging: console level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 LOG_LEVEL="INFO"
 
