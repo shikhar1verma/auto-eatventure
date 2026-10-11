@@ -128,17 +128,19 @@ before reversing.
 
 ### New city (fly):
 1. Detect `fly_next_city_icon` template (threshold 0.95)
-2. Click next level -> fly -> welcome OK (fixed 19 s wait) -> wait for
-   the first stand's "Open" button and tap it
+2. Click next level -> fly -> wait for the "Welcome to <city>" dialog's
+   "Okay" button and tap it -> wait for the first stand's "Open"
+   button and tap it
 3. Open all chests (recursive)
 
-### Waiting for the "Open" button:
-`_wait_and_click_open_button()` polls the `open_button` template every
-second, up to `OPEN_BUTTON_TIMEOUT_S` (45 s), so slow renovate / fly
-animations no longer leave the dialog open. If the button never shows
-up (e.g. it was tapped by hand), its position is tapped anyway, a
-WARNING goes to both `autoplay.log` and `key_events.log` and the bot
-continues.
+### Waiting for the "Okay" / "Open" buttons:
+`_wait_and_click_button()` polls the button's template every second,
+up to `WELCOME_OKAY_TIMEOUT_S` (60 s; the flight animation takes
+~15-19 s) for `welcome_city_okay` and `OPEN_BUTTON_TIMEOUT_S` (45 s)
+for `open_button`, so slow renovate / fly animations no longer leave
+a dialog open. If the button never shows up (e.g. it was tapped by
+hand), its position is tapped anyway, a WARNING goes to both
+`autoplay.log` and `key_events.log` and the bot continues.
 
 ### After transition:
 Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_started=True`, `new_level_first_food_icon_swipe=False`, `popular_dish_wait_for_upgrade=True`

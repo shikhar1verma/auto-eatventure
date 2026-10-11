@@ -90,6 +90,7 @@ A separate file recording only key milestones. Useful for tracking progress (e.g
 | `RESTART` | Stale state triggers app restart | `RESTART - Stale state, restarting app` |
 | `POPULAR DISH` | Popular Dish selected and stopped (optional) | `POPULAR DISH - Selected first dish` |
 | `WARNING` | First stand's "Open" button not found after renovate / fly (should not normally happen) | `WARNING - Open button not found` |
+| `WARNING` | "Welcome to <city>" dialog's "Okay" button not found after fly (should not normally happen) | `WARNING - Okay button not found` |
 
 ### Usage:
 

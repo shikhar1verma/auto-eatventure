@@ -23,12 +23,15 @@ SWIPES_PER_DIRECTION = 7
 STALE_RESTART_THRESHOLD = 50
 STALE_SWIPE_THRESHOLD = 15
 
-# The "Open" dialog of the first stand appears after the renovate /
-# fly animation, which is slow on some phones. It is awaited up to
-# this long; then it is tapped blindly (e.g. closed by hand).
+# The "Welcome to <city>" dialog (Okay) appears after the flight
+# animation (~15-19 s) and the "Open" dialog of the first stand after
+# the renovate animation / Okay; both are slow on some phones. They
+# are awaited up to this long; then tapped blindly (e.g. closed by
+# hand).
+WELCOME_OKAY_TIMEOUT_S = 60
 OPEN_BUTTON_TIMEOUT_S = 45
 # Delay before tapping, so the dialog finishes its pop-in animation
-OPEN_BUTTON_TAP_DELAY_S = 1
+DIALOG_BUTTON_TAP_DELAY_S = 1
 
 # Time for the Active Skills / Select a dish dialogs to animate
 SKILL_DIALOG_DELAY_S = 1.5
@@ -96,6 +99,10 @@ class GameActions:
   def is_having_open_button(self):
     return self.matcher.is_hsv_match(
       self._hsv(), 'open_button', threshold=0.9)
+
+  def is_having_welcome_city_okay(self):
+    return self.matcher.is_hsv_match(
+      self._hsv(), 'welcome_city_okay', threshold=0.9)
 
   def is_having_next_level_icon(self):
     return self.matcher.is_hsv_match(
@@ -418,14 +425,10 @@ class GameActions:
       log.info('Flying to next city')
       self.device.click(
         self.loc.fly_next_city_button_coords)
-      # Was 15 s. +4 s only because of a slow phone: the flight
-      # animation sometimes didn't finish in time, the click missed
-      # the OK button and the game stayed stuck on it forever.
-      # Better fix: capture a template of the OK button and wait for
-      # it to appear instead of sleeping a fixed time.
-      time.sleep(19)
-      self.device.click(
-        self.loc.welcome_city_ok_button_coords)
+      self._wait_and_click_button(
+        'Okay', self.is_having_welcome_city_okay,
+        self.loc.welcome_city_ok_button_coords,
+        WELCOME_OKAY_TIMEOUT_S)
       self._wait_and_click_open_button()
       time.sleep(5)
       gone_to_next_level = True
@@ -437,25 +440,33 @@ class GameActions:
     return gone_to_next_level
 
   def _wait_and_click_open_button(self):
-    """Wait for the "Open" button of the first stand and tap it.
+    """Wait for the "Open" button of the first stand and tap it."""
+    self._wait_and_click_button(
+      'Open', self.is_having_open_button,
+      self.loc.first_lemonade_stand_open_coords,
+      OPEN_BUTTON_TIMEOUT_S)
+
+  def _wait_and_click_button(self, name, is_visible, coords,
+                             timeout_s):
+    """Wait for a dialog button and tap it.
 
     If it doesn't show up in time, tap its position anyway and log
     a warning, the bot then continues.
     """
-    deadline = time.monotonic() + OPEN_BUTTON_TIMEOUT_S
+    deadline = time.monotonic() + timeout_s
     while True:
       self.device.capture_screenshot()
-      if self.is_having_open_button():
-        time.sleep(OPEN_BUTTON_TAP_DELAY_S)
+      if is_visible():
+        time.sleep(DIALOG_BUTTON_TAP_DELAY_S)
         break
       if time.monotonic() >= deadline:
         log.warning(
-          'Open button not found within %d s, tapping it blindly. '
-          'This should not normally happen.', OPEN_BUTTON_TIMEOUT_S)
-        key_log.warning("WARNING - Open button not found")
+          '%s button not found within %d s, tapping it blindly. '
+          'This should not normally happen.', name, timeout_s)
+        key_log.warning("WARNING - %s button not found", name)
         break
       time.sleep(1)
-    self.device.click(self.loc.first_lemonade_stand_open_coords)
+    self.device.click(coords)
 
   def select_popular_dish(self):
     """Select the first dish as Popular Dish, start the skill and
