@@ -20,7 +20,7 @@ key_log = get_key_logger()
 # the same total travel as the old single 1285px swipe used to, so a
 # full stale-swipe cycle still reaches the top/bottom of a tall level.
 SWIPES_PER_DIRECTION = 7
-STALE_RESTART_THRESHOLD = 50
+STALE_RECOVERY_THRESHOLD = 50
 STALE_SWIPE_THRESHOLD = 15
 
 # The "Welcome to <city>" dialog (Okay) appears after the flight
@@ -224,15 +224,23 @@ class GameActions:
                          swipe_count):
     """Handle when no actionable items found for too long.
 
-    Returns updated swipe_count.
+    The game is not restarted: start_app() only brings the running
+    game to the foreground. The counter is reset afterwards, so this
+    happens once per STALE_RECOVERY_THRESHOLD empty loops, not on
+    every loop until something can be upgraded.
+
+    Returns updated (nothing_to_update_count, swipe_count).
     """
-    if nothing_to_update_count > STALE_RESTART_THRESHOLD:
-      log.warning('Nothing to update — restarting app.')
-      key_log.info("RESTART - Stale state, restarting app")
+    if nothing_to_update_count > STALE_RECOVERY_THRESHOLD:
+      log.warning('Nothing to update for %d loops — bringing game to '
+                  'foreground.', nothing_to_update_count)
+      key_log.info(
+        "STALE - Nothing to update, bringing game to foreground")
       self.device.start_app()
       time.sleep(1)
       self.device.click(self.loc.null_click_coords)
       time.sleep(1)
+      nothing_to_update_count = 0
 
     if (nothing_to_update_count >= STALE_SWIPE_THRESHOLD
         and nothing_to_update_count % 5 == 0):
@@ -245,7 +253,7 @@ class GameActions:
       time.sleep(3)
       swipe_count += 1
 
-    return swipe_count
+    return nothing_to_update_count, swipe_count
 
   def reposition_after_new_level(self, food_icon_locations):
     """Swipe layout to position first food icon correctly.

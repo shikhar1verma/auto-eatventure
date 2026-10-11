@@ -34,7 +34,7 @@ logger.py              # setup_logging() + get_logger() + get_key_logger()
 |-------|-------|
 | `DEBUG` | Internal details: raw template match scores, pixel checks |
 | `INFO` | All game actions: upgrading station, opening boxes, food upgrades, chests, level transitions, ads, layout adjustments, stale swipes |
-| `WARNING` | Recovery actions: stale state restart, missing config, invalid env values |
+| `WARNING` | Recovery actions: stale state (bring game to foreground), missing config, invalid env values |
 | `ERROR` | Failures: template not found, mask empty (used in debug scripts) |
 
 ## Usage in Code
@@ -46,7 +46,7 @@ log = get_logger(__name__)
 
 log.debug('Upgrading items')
 log.info('Chest found — opening.')
-log.warning('Nothing to update — restarting app.')
+log.warning('Nothing to update — bringing game to foreground.')
 ```
 
 ## Initialization
@@ -87,7 +87,7 @@ A separate file recording only key milestones. Useful for tracking progress (e.g
 | `START` | Bot process begins | `START - Bot started` |
 | `NEXT LEVEL` | Renovated to next level (same city) | `NEXT LEVEL - Renovated to next level` |
 | `FLY` | Flying to a new city/restaurant | `FLY - Flying to next city` |
-| `RESTART` | Stale state triggers app restart | `RESTART - Stale state, restarting app` |
+| `STALE` | Nothing to update for 50 loops, game brought to the foreground (not restarted; at most once per ~2-3 min) | `STALE - Nothing to update, bringing game to foreground` |
 | `POPULAR DISH` | Popular Dish selected and stopped (optional) | `POPULAR DISH - Selected first dish` |
 | `WARNING` | First stand's "Open" button not found after renovate / fly (should not normally happen) | `WARNING - Open button not found` |
 | `WARNING` | "Welcome to <city>" dialog's "Okay" button not found after fly (should not normally happen) | `WARNING - Okay button not found` |
@@ -109,7 +109,7 @@ key_log.info("FLY - Flying to next city")
 2024-01-15 08:12:01,456  NEXT LEVEL - Renovated to next level
 2024-01-15 08:19:33,789  FLY - Flying to next city
 2024-01-15 08:25:11,012  NEXT LEVEL - Renovated to next level
-2024-01-15 09:01:55,234  RESTART - Stale state, restarting app
+2024-01-15 09:01:55,234  STALE - Nothing to update, bringing game to foreground
 ```
 
 ## Console Output Format

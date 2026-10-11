@@ -109,7 +109,10 @@ class Device:
       start['x'], start['y'], end['x'], end['y'])
 
   def start_app(self):
-    """Launch the game app."""
+    """Launch the game app, or bring it to the foreground.
+
+    It does not restart a running game (that needs close_app()).
+    """
     self.device.shell(
       f"monkey -p {self.package_name} "
       f"-c android.intent.category.LAUNCHER 1")
