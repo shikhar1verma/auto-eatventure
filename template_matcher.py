@@ -56,6 +56,8 @@ class TemplateMatcher:
         './matching_screenshots/first_lemonade_stand_open.png',
       'open_button':
         './matching_screenshots/open_button.png',
+      'welcome_city_okay':
+        './matching_screenshots/welcome_city_okay.png',
       'settings':
         './matching_screenshots/settings.png',
       'offline_earnings':
