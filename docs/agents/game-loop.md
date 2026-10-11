@@ -82,7 +82,11 @@ iteration then ends (`continue`), so its other steps are skipped.
 - Truck states: available (black, nothing under it), running (black +
   green "N/M"), cooldown (grey + "Xm Ys", ~3 min), unavailable (grey)
 - The button moves up when the button above it is missing, so it is
-  searched in an area and tapped where it was found
+  searched in an area and tapped at the found y
+- Left column buttons (truck, helper) are tapped at
+  `side_button_tap_x`, right of their center: on some phones
+  (OnePlus Nord 3) the column is partly hidden behind the screen edge
+  and taps on the buttons' left part are ignored
 - After any attempt the checks pause for `FOOD_DELIVERY_PAUSE_S`
   (60 s), so a failure can't loop; a delivery and its cooldown take
   longer anyway

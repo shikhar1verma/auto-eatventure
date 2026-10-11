@@ -51,10 +51,11 @@ HELPER_AVAILABLE_MAX_DIFF = 0.015
 # Red badge on the upgrade button = an upgrade can be bought. It
 # pulses (size, tilt), which made template matching miss ~1/3 of the
 # frames, so its red pixels are counted (red wraps around hue 180).
-# The badge covers ~20% of its area, 0% when it is not shown.
+# The badge covers ~21-30% of its area, 0% when it is not shown; red
+# food in customers' bubbles behind the area reached ~5%.
 UPGRADE_BADGE_RED = [((0, 120, 150), (8, 255, 255)),
                      ((172, 120, 150), (180, 255, 255))]
-UPGRADE_BADGE_MIN_RATIO = 0.05
+UPGRADE_BADGE_MIN_RATIO = 0.12
 # Buy button of the first row in the Upgrades dialog: blue while
 # affordable, grey when not (bought upgrades leave the list, so the
 # next one moves to the first row)
@@ -204,8 +205,8 @@ class GameActions:
     return None
 
   def get_food_delivery_truck_coords(self):
-    """Return [x, y] of the truck button when a Food Delivery is
-    available (black truck, no counter / countdown), else None."""
+    """Return the tap [x, y] of the truck button when a Food Delivery
+    is available (black truck, no counter / countdown), else None."""
     left = self.sc.food_delivery_roi_left_x
     right = self.sc.food_delivery_roi_right_x
     top = self.sc.food_delivery_roi_top_y
@@ -215,9 +216,9 @@ class GameActions:
       roi, 'food_delivery_available')
     if loc is None:
       return None
-    th, tw = self.matcher.templates[
-      'food_delivery_available']['simple'].shape[:2]
-    return [left + loc[0] + tw // 2, top + loc[1] + th // 2]
+    th = self.matcher.templates[
+      'food_delivery_available']['simple'].shape[0]
+    return [self.sc.side_button_tap_x, top + loc[1] + th // 2]
 
   def is_having_food_delivery_accept(self):
     """Accept button of the first order in the Food Delivery

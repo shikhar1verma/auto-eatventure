@@ -84,8 +84,11 @@ fly_next_city_button_y = 1892
 welcome_city_ok_button_x = 618
 welcome_city_ok_button_y = 1695
 
+# Empty spot (floor below the top bar) tapped to close station popups.
+# On OnePlus Nord 3 the top bar catches taps down to ~300 px of 2772,
+# so a tap at y=278 (284 there) left the popup open.
 null_click_x = 886
-null_click_y = 278
+null_click_y = 340
 
 chest_x = 110
 chest_y = 734
@@ -119,6 +122,14 @@ first_dish_2_tiles_x = 486
 first_dish_1_tile_x = 610
 first_dish_y = 1304
 
+# ── Left button column ────────────────────────────────────────────────────────
+# Taps on the left button column (helper, Food Delivery truck) use this
+# x, right of the buttons' center (~75). Not side_button_zone_width_x,
+# which keeps food taps away from the side buttons. On some phones (OnePlus Nord 3)
+# the column is partly hidden behind the screen edge and taps on the
+# buttons' left part (< ~90) are ignored.
+side_button_tap_x = 120
+
 # ── Food Delivery ─────────────────────────────────────────────────────────────
 # Truck button in the left button column. It moves up when the button
 # above it is missing, so it is searched in this area.
@@ -135,7 +146,6 @@ food_delivery_accept_roi_half_height_y = 79
 
 # ── Invite a Helper ───────────────────────────────────────────────────────────
 # Helper (person) button, the top one in the left button column
-helper_button_x = 75
 helper_button_y = 434
 # Search area of the "available" template (lower part of the button:
 # person's body + the empty line where a countdown / ad icon would be)
