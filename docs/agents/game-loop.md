@@ -6,6 +6,17 @@
 
 The main game loop lives in `AutoEatventure.start_playing_game()` at `adb_autoplay.py:44`. It runs **indefinitely**, calling high-level methods from `GameActions`. The loop itself is ~40 lines of pure orchestration.
 
+## Startup (`init_game`)
+
+Before the loop, `GameActions.init_game()` polls every 5 s until the
+settings icon is visible or the offline earnings dialog is closed.
+If the bot is restarted while a dialog covers the screen, it taps the
+known ones and keeps waiting: the "Welcome to <city>" "Okay" button
+(after a flight) and the first stand's "Open" button (after a
+renovation), via the same helpers as the level transition. Every
+wait logs `Init: waiting for game to be ready`, so an unknown dialog
+shows up in the log instead of a silent hang.
+
 ## Loop Structure
 
 ```python

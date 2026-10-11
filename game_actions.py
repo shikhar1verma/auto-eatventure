@@ -433,10 +433,7 @@ class GameActions:
       log.info('Flying to next city')
       self.device.click(
         self.loc.fly_next_city_button_coords)
-      self._wait_and_click_button(
-        'Okay', self.is_having_welcome_city_okay,
-        self.loc.welcome_city_ok_button_coords,
-        WELCOME_OKAY_TIMEOUT_S)
+      self._wait_and_click_welcome_okay()
       self._wait_and_click_open_button()
       time.sleep(5)
       gone_to_next_level = True
@@ -446,6 +443,14 @@ class GameActions:
       self.open_chests()
 
     return gone_to_next_level
+
+  def _wait_and_click_welcome_okay(self):
+    """Wait for the "Okay" button of the "Welcome to <city>" dialog
+    and tap it."""
+    self._wait_and_click_button(
+      'Okay', self.is_having_welcome_city_okay,
+      self.loc.welcome_city_ok_button_coords,
+      WELCOME_OKAY_TIMEOUT_S)
 
   def _wait_and_click_open_button(self):
     """Wait for the "Open" button of the first stand and tap it."""
@@ -661,7 +666,11 @@ class GameActions:
   # ── Init / login ──────────────────────────────────────────
 
   def init_game(self):
-    """Wait until game is in playable state."""
+    """Wait until game is in playable state.
+
+    Taps known dialogs that can cover the screen when the bot is
+    restarted, e.g. right after a renovation or a flight.
+    """
     while True:
       self.device.capture_screenshot()
       if self.is_having_settings():
@@ -670,7 +679,17 @@ class GameActions:
         self.device.click(
           self.loc.close_offline_earnings_coords)
         break
+      if self.is_having_welcome_city_okay():
+        log.info('Init: closing "Welcome to <city>" dialog')
+        self._wait_and_click_welcome_okay()
+        continue
+      if self.is_having_open_button():
+        log.info('Init: tapping first stand "Open" button')
+        self._wait_and_click_open_button()
+        continue
+      log.info('Init: waiting for game to be ready')
       time.sleep(5)
+    log.info('Init: game is ready')
 
   def start_game_for_first_time(self):
     """Handle first-time game startup dialogs."""
