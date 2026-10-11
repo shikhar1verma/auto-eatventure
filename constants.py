@@ -135,6 +135,11 @@ class Constants:
                       sc.first_dish_1_tile_x)
         ]
 
+        self.food_delivery_accept_coords = {
+            'x': sc.food_delivery_accept_x,
+            'y': sc.food_delivery_accept_y
+        }
+
         self.swipe_layout_down_coords = {
             'start': {
                 'x': sc.swipe_layout_down_start_x,

@@ -14,6 +14,7 @@ while True:
     swipe_count = actions.handle_stale_state(...)
     actions.select_popular_dish()           # when popular_dish_next_try passed
     device.capture_screenshot()
+    actions.accept_food_delivery(...)       # truck available -> continue
     actions.close_accidental_popups()       # every 150 iterations
     actions.try_upgrade_items(count, ...)   # every 5th iteration
     actions.open_boxes()                    # every 2nd iteration
@@ -32,6 +33,7 @@ while True:
 | `count % 5 == 0` | Open upgrade menu, click upgrades | `actions.try_upgrade_items()` |
 | `count % 10 == 0` (no food) | Check next level / city | `actions.check_to_go_next_level()` |
 | `count % 150 == 0` | Close accidental popups | `actions.close_accidental_popups()` |
+| `FOOD_DELIVERY_ENABLED` and truck available | Accept the first Food Delivery order | `actions.accept_food_delivery()` |
 | `POPULAR_DISH_ENABLED` and `popular_dish_next_try` passed | Select first dish as Popular Dish, Start + Stop at once | `actions.select_popular_dish()` |
 
 ### Popular Dish (Masterchef quest farming, optional)
@@ -52,6 +54,29 @@ Every tap is verified by the Select/Start/Stop templates.
   the first food upgrade (`popular_dish_wait_for_upgrade`)
 - The dish grid is centered with max 3 tiles per row, so the first
   tile's x depends on the dish count; all positions are tried in order
+
+### Food Delivery (quest farming, optional)
+
+Disabled by default; enable with `FOOD_DELIVERY_ENABLED="1"` in `.env`.
+The screenshot of every loop iteration is checked (~15 ms) for an
+available delivery truck button in the left button column
+(`get_food_delivery_truck_coords()`). If found,
+`accept_food_delivery()` taps it, verifies the "Food Delivery" dialog
+by the first order's Accept button and taps Accept. The dialog closes
+by itself and the delivery completes without any further tap. The
+iteration then ends (`continue`), so its other steps are skipped.
+
+- Truck states: available (black, nothing under it), running (black +
+  green "N/M"), cooldown (grey + "Xm Ys", ~3 min), unavailable (grey)
+- The button moves up when the button above it is missing, so it is
+  searched in an area and tapped where it was found
+- After any attempt the checks pause for `FOOD_DELIVERY_PAUSE_S`
+  (60 s), so a failure can't loop; a delivery and its cooldown take
+  longer anyway
+- Failure (dialog not open / still open): it is closed with
+  `close_accidental_popups()`
+- Success is logged only to `autoplay.log` (too frequent for
+  `key_events.log`)
 
 ## Stale State Recovery
 

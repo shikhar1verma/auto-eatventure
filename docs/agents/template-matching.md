@@ -4,7 +4,7 @@
 
 ## Overview
 
-The project uses **OpenCV template matching** (`cv2.matchTemplate` with `TM_CCOEFF_NORMED`) to detect game UI elements in screenshots. No OCR is used. All matching logic lives in `template_matcher.py` (`TemplateMatcher` class).
+The project uses **OpenCV template matching** (`cv2.matchTemplate` with `TM_CCOEFF_NORMED`; `TM_SQDIFF_NORMED` for the Food Delivery truck, see strategy 5) to detect game UI elements in screenshots. No OCR is used. All matching logic lives in `template_matcher.py` (`TemplateMatcher` class).
 
 ## Matching Strategies
 
@@ -43,6 +43,17 @@ Direct matching without color space conversion:
 - Used by `find_all_templates()` for box detection
 - Fallback when masked matching fails on different devices
 
+### 5. Brightness-Sensitive Matching (SQDIFF)
+
+`TemplateMatcher.match_bgr_sqdiff()`:
+
+- `TM_SQDIFF_NORMED` on raw BGR, match when the diff is below
+  `max_diff` (default 0.02; 0 = identical)
+- `TM_CCOEFF_NORMED` ignores brightness, so it can't tell a black icon
+  from the same icon greyed out; SQDIFF can
+- Used for the Food Delivery truck (available = black, cooldown /
+  unavailable = grey)
+
 ## Multi-Match Detection with DBSCAN
 
 `TemplateMatcher.find_all_templates()` at `template_matcher.py`:
@@ -73,6 +84,8 @@ All templates are in `matching_screenshots/` and registered in `TemplateMatcher.
 | `chest_icon.png` | `is_having_chest_icon()` | HSV | 0.8 |
 | `popup_close_cross.png` | `close_accidental_popups()` | HSV | 0.8 |
 | `popular_dish_select.png`, `popular_dish_start.png`, `popular_dish_stop.png` | `get_popular_dish_button_state()` (ROI around the Popular Dish button) | HSV | 0.9 |
+| `food_delivery_available.png` | `get_food_delivery_truck_coords()` (left button column) | BGR SQDIFF | < 0.02 |
+| `food_delivery_accept.png` | `is_having_food_delivery_accept()` (ROI around the first order's Accept) | HSV | 0.9 |
 | `no_boost_indicator_2x.png` | (available) | HSV | 0.92 |
 | `ads_crosses/cross1.png` | (available) | Grayscale | 0.8 |
 
