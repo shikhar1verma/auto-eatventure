@@ -99,6 +99,7 @@ pixels in an HSV range is measured with `color_ratio()`):
 | Element | Detection Method | Color | Min ratio |
 |---------|------------------|-------|-----------|
 | Red badge on the upgrade button | `is_having_upgrade()` | red | 0.05 |
+| Red X (close) of the Upgrades dialog | `is_having_upgrades_dialog()` | red | 0.4 |
 | First row's buy button in the Upgrades dialog | `is_first_upgrade_affordable()` | blue (grey = too expensive) | 0.3 |
 
 ## Template Scaling

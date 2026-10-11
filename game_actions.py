@@ -66,6 +66,11 @@ UPGRADE_CLICKS_PER_CHECK = 5
 UPGRADE_MAX_CLICKS = 50
 # Time for the Upgrades dialog to pop in before the first check
 UPGRADE_DIALOG_OPEN_DELAY_S = 0.5
+# Time for a station popup to close after a tap on the null spot
+STATION_POPUP_CLOSE_DELAY_S = 0.3
+# The red X of the open dialog fills ~80% of its area (same red as the
+# badge), ~0-10% without the dialog
+UPGRADES_DIALOG_MIN_RATIO = 0.4
 # The closed Upgrades dialog fades out for ~0.6 s; a screenshot taken
 # meanwhile hides the food icons (with the badge still shown, the next
 # loops kept missing the stations and went stale)
@@ -122,6 +127,16 @@ class GameActions:
       self.sc.upgrade_badge_roi_left_x:self.sc.upgrade_badge_roi_right_x]
     return (self.matcher.color_ratio(roi, UPGRADE_BADGE_RED)
             >= UPGRADE_BADGE_MIN_RATIO)
+
+  def is_having_upgrades_dialog(self):
+    """Red X (close) button of the Upgrades dialog."""
+    x = self.sc.close_upgrade_button_x
+    y = self.sc.close_upgrade_button_y
+    hw = self.sc.close_upgrade_roi_half_width_x
+    hh = self.sc.close_upgrade_roi_half_height_y
+    roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
+    return (self.matcher.color_ratio(roi, UPGRADE_BADGE_RED)
+            >= UPGRADES_DIALOG_MIN_RATIO)
 
   def is_first_upgrade_affordable(self):
     """Blue buy button of the first row in the Upgrades dialog."""
@@ -416,15 +431,25 @@ class GameActions:
 
   def do_upgrades(self):
     """Open the upgrade menu and buy the first row's upgrade while it
-    is affordable, in rounds of UPGRADE_CLICKS_PER_CHECK taps.
-
-    The first check also covers a dialog that did not open: nothing is
-    tapped then."""
+    is affordable, in rounds of UPGRADE_CLICKS_PER_CHECK taps."""
+    # A station popup may still be open after upgrade_food_items(); a
+    # tap on the upgrade button would only close it
+    self.device.click(self.loc.null_click_coords)
+    time.sleep(STATION_POPUP_CLOSE_DELAY_S)
     self.device.click(self.loc.upgrade_button_coords)
     time.sleep(UPGRADE_DIALOG_OPEN_DELAY_S)
+    self.device.capture_screenshot()
+    if not self.is_having_upgrades_dialog():
+      # The close tap would land on the restaurant and could open a
+      # station popup hiding the food icons, so tap the null spot.
+      log.info('Upgrades dialog did not open')
+      self.device.click(self.loc.null_click_coords)
+      time.sleep(UPGRADE_DIALOG_CLOSE_DELAY_S)
+      return
     clicks = 0
     while clicks < UPGRADE_MAX_CLICKS:
-      self.device.capture_screenshot()
+      if clicks:
+        self.device.capture_screenshot()
       if not self.is_first_upgrade_affordable():
         break
       for _ in range(UPGRADE_CLICKS_PER_CHECK):

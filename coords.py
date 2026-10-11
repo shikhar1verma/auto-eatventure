@@ -65,6 +65,10 @@ upgrade_badge_roi_bottom_y = 2542
 single_upgrade_roi_half_width_x = 100
 single_upgrade_roi_half_height_y = 34
 
+# Area around the red X (close) button of the Upgrades dialog
+close_upgrade_roi_half_width_x = 40
+close_upgrade_roi_half_height_y = 40
+
 next_level_button_x = 127
 next_level_button_y = 2521
 

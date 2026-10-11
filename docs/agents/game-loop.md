@@ -161,7 +161,13 @@ Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_f
    while an upgrade can be bought. The badge pulses (size, tilt), so
    its red pixels are counted (`is_having_upgrade()`); template
    matching missed ~1/3 of the frames.
-2. The menu is opened (`UPGRADE_DIALOG_OPEN_DELAY_S`, 0.5 s) and,
+2. The null spot is tapped first: a station popup left open by the
+   food upgrades stays open under the Upgrades dialog and, after it
+   is closed, hides the station's food icon (the loop then finds
+   nothing to upgrade). If the dialog does not open (red X not found,
+   `is_having_upgrades_dialog()`), the null spot is tapped instead of
+   the X, which would land on the restaurant.
+3. The menu is opened (`UPGRADE_DIALOG_OPEN_DELAY_S`, 0.5 s) and,
    before every round, a screenshot checks the first row's buy button
    (`is_first_upgrade_affordable()`): blue = tap it
    `UPGRADE_CLICKS_PER_CHECK` (5) times, grey = too expensive, close
@@ -169,7 +175,7 @@ Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_f
    to the first row. A dialog that did not open gets no taps. At most
    `UPGRADE_MAX_CLICKS` (50) taps (a new level has many cheap
    upgrades).
-3. After closing, the bot waits `UPGRADE_DIALOG_CLOSE_DELAY_S`
+4. After closing, the bot waits `UPGRADE_DIALOG_CLOSE_DELAY_S`
    (0.8 s) for the dialog to fade out before the next screenshot;
    otherwise the food icons are hidden and the stations are skipped.
 
