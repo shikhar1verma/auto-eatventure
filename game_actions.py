@@ -62,8 +62,8 @@ UPGRADE_BUY_BLUE = [((95, 120, 200), (110, 255, 255))]
 UPGRADE_BUY_MIN_RATIO = 0.3
 # Upgrades are bought in rounds of this many taps, each preceded by a
 # check of the first row, up to UPGRADE_MAX_CLICKS (a new level)
-UPGRADE_CLICKS_PER_CHECK = 3
-UPGRADE_MAX_CLICKS = 51
+UPGRADE_CLICKS_PER_CHECK = 5
+UPGRADE_MAX_CLICKS = 50
 # Time for the Upgrades dialog to pop in before the first check
 UPGRADE_DIALOG_OPEN_DELAY_S = 0.5
 # The closed Upgrades dialog fades out for ~0.6 s; a screenshot taken
