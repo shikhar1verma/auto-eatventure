@@ -11,7 +11,7 @@ The main game loop lives in `AutoEatventure.start_playing_game()` at `adb_autopl
 ```python
 while True:
     count += 1
-    swipe_count = actions.handle_stale_state(...)
+    nothing_to_update_count, swipe_count = actions.handle_stale_state(...)
     actions.select_popular_dish()           # when popular_dish_next_try passed
     device.capture_screenshot()
     actions.accept_food_delivery(...)       # truck available -> continue
