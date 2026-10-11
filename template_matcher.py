@@ -96,6 +96,10 @@ class TemplateMatcher:
         './matching_screenshots/food_delivery_available.png',
       'food_delivery_accept':
         './matching_screenshots/food_delivery_accept.png',
+      'helper_available':
+        './matching_screenshots/helper_available.png',
+      'helper_invite':
+        './matching_screenshots/helper_invite.png',
       'ads_crosses': {
         'cross1':
           './matching_screenshots/ads_crosses/cross1.png',

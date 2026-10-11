@@ -4,7 +4,7 @@
 
 ## Overview
 
-The project uses **OpenCV template matching** (`cv2.matchTemplate` with `TM_CCOEFF_NORMED`; `TM_SQDIFF_NORMED` for the Food Delivery truck, see strategy 5) to detect game UI elements in screenshots. No OCR is used. All matching logic lives in `template_matcher.py` (`TemplateMatcher` class).
+The project uses **OpenCV template matching** (`cv2.matchTemplate` with `TM_CCOEFF_NORMED`; `TM_SQDIFF_NORMED` for the Food Delivery truck and the helper button, see strategy 5) to detect game UI elements in screenshots. No OCR is used. All matching logic lives in `template_matcher.py` (`TemplateMatcher` class).
 
 ## Matching Strategies
 
@@ -52,7 +52,9 @@ Direct matching without color space conversion:
 - `TM_CCOEFF_NORMED` ignores brightness, so it can't tell a black icon
   from the same icon greyed out; SQDIFF can
 - Used for the Food Delivery truck (available = black, cooldown /
-  unavailable = grey)
+  unavailable = grey) and the helper button (available = black
+  person with an empty line under it; max diff 0.015, since the
+  black person with only an ad icon under it scores ~0.03)
 
 ## Multi-Match Detection with DBSCAN
 
@@ -86,6 +88,8 @@ All templates are in `matching_screenshots/` and registered in `TemplateMatcher.
 | `popular_dish_select.png`, `popular_dish_start.png`, `popular_dish_stop.png` | `get_popular_dish_button_state()` (ROI around the Popular Dish button) | HSV | 0.9 |
 | `food_delivery_available.png` | `get_food_delivery_truck_coords()` (left button column) | BGR SQDIFF | < 0.02 |
 | `food_delivery_accept.png` | `is_having_food_delivery_accept()` (ROI around the first order's Accept) | HSV | 0.9 |
+| `helper_available.png` | `is_having_helper_available()` (ROI around the helper button) | BGR SQDIFF | < 0.015 |
+| `helper_invite.png` | `is_having_helper_invite()` (ROI around the first helper's Invite) | HSV | 0.9 |
 | `no_boost_indicator_2x.png` | (available) | HSV | 0.92 |
 | `ads_crosses/cross1.png` | (available) | Grayscale | 0.8 |
 
