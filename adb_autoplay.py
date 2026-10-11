@@ -90,7 +90,6 @@ class AutoEatventure:
     count = 0
     swipe_count = 0
     nothing_to_update_count = 0
-    new_level_started = True
     new_level_first_food_icon_swipe = False
     popular_dish_next_try = 0
     popular_dish_wait_for_upgrade = False
@@ -129,8 +128,7 @@ class AutoEatventure:
       if count % 150 == 0:
         self.actions.close_accidental_popups()
 
-      new_level_started = self.actions.try_upgrade_items(
-        count, new_level_started)
+      self.actions.try_upgrade_items()
 
       if count == 1 or count % 2 == 0:
         self.actions.open_boxes()
@@ -159,7 +157,6 @@ class AutoEatventure:
             swipe_count = 0
             nothing_to_update_count = 0
             new_level_first_food_icon_swipe = False
-            new_level_started = True
             popular_dish_wait_for_upgrade = True
 
 

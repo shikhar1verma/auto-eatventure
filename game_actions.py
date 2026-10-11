@@ -48,6 +48,34 @@ HELPER_DIALOG_DELAY_S = 1.5
 # the black person with only an ad icon under it scores ~0.03.
 HELPER_AVAILABLE_MAX_DIFF = 0.015
 
+# Red badge on the upgrade button = an upgrade can be bought. It
+# pulses (size, tilt), which made template matching miss ~1/3 of the
+# frames, so its red pixels are counted (red wraps around hue 180).
+# The badge covers ~20% of its area, 0% when it is not shown.
+UPGRADE_BADGE_RED = [((0, 120, 150), (8, 255, 255)),
+                     ((172, 120, 150), (180, 255, 255))]
+UPGRADE_BADGE_MIN_RATIO = 0.05
+# Buy button of the first row in the Upgrades dialog: blue while
+# affordable, grey when not (bought upgrades leave the list, so the
+# next one moves to the first row)
+UPGRADE_BUY_BLUE = [((95, 120, 200), (110, 255, 255))]
+UPGRADE_BUY_MIN_RATIO = 0.3
+# Upgrades are bought in rounds of this many taps, each preceded by a
+# check of the first row, up to UPGRADE_MAX_CLICKS (a new level)
+UPGRADE_CLICKS_PER_CHECK = 5
+UPGRADE_MAX_CLICKS = 50
+# Time for the Upgrades dialog to pop in before the first check
+UPGRADE_DIALOG_OPEN_DELAY_S = 0.5
+# Time for a station popup to close after a tap on the null spot
+STATION_POPUP_CLOSE_DELAY_S = 0.3
+# The red X of the open dialog fills ~80% of its area (same red as the
+# badge), ~0-10% without the dialog
+UPGRADES_DIALOG_MIN_RATIO = 0.4
+# The closed Upgrades dialog fades out for ~0.6 s; a screenshot taken
+# meanwhile hides the food icons (with the badge still shown, the next
+# loops kept missing the stations and went stale)
+UPGRADE_DIALOG_CLOSE_DELAY_S = 0.8
+
 POPULAR_DISH_BUTTON_TEMPLATES = {
   'select': 'popular_dish_select',
   'start': 'popular_dish_start',
@@ -93,8 +121,32 @@ class GameActions:
       self._hsv(), 'offline_earnings')
 
   def is_having_upgrade(self):
-    return self.matcher.is_hsv_match(
-      self._hsv(), 'upgrade_button', threshold=0.97)
+    """Red badge on the upgrade button."""
+    roi = self._hsv()[
+      self.sc.upgrade_badge_roi_top_y:self.sc.upgrade_badge_roi_bottom_y,
+      self.sc.upgrade_badge_roi_left_x:self.sc.upgrade_badge_roi_right_x]
+    return (self.matcher.color_ratio(roi, UPGRADE_BADGE_RED)
+            >= UPGRADE_BADGE_MIN_RATIO)
+
+  def is_having_upgrades_dialog(self):
+    """Red X (close) button of the Upgrades dialog."""
+    x = self.sc.close_upgrade_button_x
+    y = self.sc.close_upgrade_button_y
+    hw = self.sc.close_upgrade_roi_half_width_x
+    hh = self.sc.close_upgrade_roi_half_height_y
+    roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
+    return (self.matcher.color_ratio(roi, UPGRADE_BADGE_RED)
+            >= UPGRADES_DIALOG_MIN_RATIO)
+
+  def is_first_upgrade_affordable(self):
+    """Blue buy button of the first row in the Upgrades dialog."""
+    x = self.sc.single_upgrade_button_x
+    y = self.sc.single_upgrade_button_y
+    hw = self.sc.single_upgrade_roi_half_width_x
+    hh = self.sc.single_upgrade_roi_half_height_y
+    roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
+    return (self.matcher.color_ratio(roi, UPGRADE_BUY_BLUE)
+            >= UPGRADE_BUY_MIN_RATIO)
 
   def is_having_open_button(self):
     return self.matcher.is_hsv_match(
@@ -294,20 +346,16 @@ class GameActions:
         return True
     return False
 
-  def try_upgrade_items(self, count, new_level_started):
-    """Attempt upgrades every 5th iteration.
+  def try_upgrade_items(self):
+    """Buy upgrades when the upgrade button shows its badge.
 
-    Returns updated new_level_started flag.
+    Checked on every loop screenshot, so upgrades are bought soon after
+    they become affordable.
     """
-    if count % 5 == 0 and self.is_having_upgrade():
+    if self.is_having_upgrade():
       log.info('Upgrades available — attempting to upgrade')
-      if new_level_started:
-        self.do_upgrades(upgrade_count=50)
-        new_level_started = False
-      else:
-        self.do_upgrades()
+      self.do_upgrades()
       self.device.capture_screenshot()
-    return new_level_started
 
   def open_boxes(self):
     """Find and click all visible boxes."""
@@ -381,15 +429,37 @@ class GameActions:
         self.device.click(self.loc.null_click_coords)
       time.sleep(0.2)
 
-  def do_upgrades(self, upgrade_count=10):
-    """Open upgrade menu and click upgrade N times."""
+  def do_upgrades(self):
+    """Open the upgrade menu and buy the first row's upgrade while it
+    is affordable, in rounds of UPGRADE_CLICKS_PER_CHECK taps."""
+    # A station popup may still be open after upgrade_food_items(); a
+    # tap on the upgrade button would only close it
+    self.device.click(self.loc.null_click_coords)
+    time.sleep(STATION_POPUP_CLOSE_DELAY_S)
     self.device.click(self.loc.upgrade_button_coords)
-    time.sleep(0.3)
-    for _ in range(upgrade_count):
-      self.device.click(
-        self.loc.single_upgrade_button_coords)
-      time.sleep(0.2)
+    time.sleep(UPGRADE_DIALOG_OPEN_DELAY_S)
+    self.device.capture_screenshot()
+    if not self.is_having_upgrades_dialog():
+      # The close tap would land on the restaurant and could open a
+      # station popup hiding the food icons, so tap the null spot.
+      log.info('Upgrades dialog did not open')
+      self.device.click(self.loc.null_click_coords)
+      time.sleep(UPGRADE_DIALOG_CLOSE_DELAY_S)
+      return
+    clicks = 0
+    while clicks < UPGRADE_MAX_CLICKS:
+      if clicks:
+        self.device.capture_screenshot()
+      if not self.is_first_upgrade_affordable():
+        break
+      for _ in range(UPGRADE_CLICKS_PER_CHECK):
+        self.device.click(
+          self.loc.single_upgrade_button_coords)
+        time.sleep(0.2)
+      clicks += UPGRADE_CLICKS_PER_CHECK
+    log.info('Upgrade taps: %d', clicks)
     self.device.click(self.loc.close_upgrade_button_coords)
+    time.sleep(UPGRADE_DIALOG_CLOSE_DELAY_S)
 
   def open_chests(self):
     """Recursively open all available chests."""

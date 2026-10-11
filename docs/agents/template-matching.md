@@ -76,7 +76,6 @@ All templates are in `matching_screenshots/` and registered in `TemplateMatcher.
 | `welcome_city_okay.png` | `is_having_welcome_city_okay()` ("Welcome to <city>" after fly) | HSV | 0.9 |
 | `settings.png` | `is_having_settings()` | HSV | 0.8 |
 | `offline_earnings.png` | `is_having_offline_earnings()` | HSV | 0.8 |
-| `upgrade_button.png` | `is_having_upgrade()` | HSV | 0.97 |
 | `buy_better_food_icon.png` | `get_food_icon_locations()` | Grayscale multi | 0.8 |
 | `buy_better_food_button.png` | (available) | HSV | 0.8 |
 | `box.png`, `box2.png` | `open_boxes()` | BGR multi | 0.7 |
@@ -93,6 +92,15 @@ All templates are in `matching_screenshots/` and registered in `TemplateMatcher.
 | `helper_invite.png` | `is_having_helper_invite()` (ROI around the first helper's Invite) | HSV | 0.8 |
 | `no_boost_indicator_2x.png` | (available) | HSV | 0.92 |
 | `ads_crosses/cross1.png` | (available) | Grayscale | 0.8 |
+
+Not template-matched (pulsing / plain color, so the share of
+pixels in an HSV range is measured with `color_ratio()`):
+
+| Element | Detection Method | Color | Min ratio |
+|---------|------------------|-------|-----------|
+| Red badge on the upgrade button | `is_having_upgrade()` | red | 0.05 |
+| Red X (close) of the Upgrades dialog | `is_having_upgrades_dialog()` | red | 0.4 |
+| First row's buy button in the Upgrades dialog | `is_first_upgrade_affordable()` | blue (grey = too expensive) | 0.3 |
 
 ## Template Scaling
 

@@ -28,7 +28,7 @@ while True:
     actions.accept_food_delivery(...)       # truck available -> continue
     actions.invite_helper()                 # helper available -> continue
     actions.close_accidental_popups()       # every 150 iterations
-    actions.try_upgrade_items(count, ...)   # every 5th iteration
+    actions.try_upgrade_items()             # upgrade badge shown
     actions.open_boxes()                    # every 2nd iteration
     food_icons = actions.get_food_icon_locations()
     # reposition after new level (once)
@@ -42,7 +42,7 @@ while True:
 |-----------|--------|--------|
 | Every iteration | Capture screenshot | `device.capture_screenshot()` |
 | `count % 2 == 0` | Find and open boxes | `actions.open_boxes()` |
-| `count % 5 == 0` | Open upgrade menu, click upgrades | `actions.try_upgrade_items()` |
+| Upgrade button shows its red badge | Open upgrade menu, buy affordable upgrades | `actions.try_upgrade_items()` |
 | `count % 10 == 0` (no food) | Check next level / city | `actions.check_to_go_next_level()` |
 | `count % 150 == 0` | Close accidental popups | `actions.close_accidental_popups()` |
 | `FOOD_DELIVERY_ENABLED` and truck available | Accept the first Food Delivery order | `actions.accept_food_delivery()` |
@@ -159,7 +159,41 @@ hand), its position is tapped anyway, a WARNING goes to both
 `autoplay.log` and `key_events.log` and the bot continues.
 
 ### After transition:
-Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_started=True`, `new_level_first_food_icon_swipe=False`, `popular_dish_wait_for_upgrade=True`
+Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_first_food_icon_swipe=False`, `popular_dish_wait_for_upgrade=True`
+
+## Upgrades (upgrade menu)
+
+`GameActions.try_upgrade_items()` / `do_upgrades()` in
+`game_actions.py`:
+
+1. Every iteration that reaches the upgrade step (Food Delivery /
+   helper invites end an iteration early) checks the loop screenshot
+   for the red badge on the upgrade button (bottom right), shown
+   while an upgrade can be bought. The badge pulses (size, tilt), so
+   its red pixels are counted (`is_having_upgrade()`); template
+   matching missed ~1/3 of the frames.
+2. The null spot is tapped first: a station popup left open by the
+   food upgrades stays open under the Upgrades dialog and, after it
+   is closed, hides the station's food icon (the loop then finds
+   nothing to upgrade). If the dialog does not open (red X not found,
+   `is_having_upgrades_dialog()`), the null spot is tapped instead of
+   the X, which would land on the restaurant.
+3. The menu is opened (`UPGRADE_DIALOG_OPEN_DELAY_S`, 0.5 s) and,
+   before every round, a screenshot checks the first row's buy button
+   (`is_first_upgrade_affordable()`): blue = tap it
+   `UPGRADE_CLICKS_PER_CHECK` (5) times, grey = too expensive, close
+   the menu. A bought upgrade leaves the list and the next one moves
+   to the first row. A dialog that did not open gets no taps. At most
+   `UPGRADE_MAX_CLICKS` (50) taps (a new level has many cheap
+   upgrades).
+4. After closing, the bot waits `UPGRADE_DIALOG_CLOSE_DELAY_S`
+   (0.8 s) for the dialog to fade out before the next screenshot;
+   otherwise the food icons are hidden and the stations are skipped.
+
+A usual visit takes ~5 s (2 checks + 5 taps + fade-out). Before, the
+menu was opened only every 5th iteration (~1 min with several
+stations, as each station takes ~4 s) and tapped blindly 10x
+(~4.7 s; 50x after a new level).
 
 ## Food Upgrade Logic
 

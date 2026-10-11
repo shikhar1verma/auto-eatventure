@@ -62,8 +62,6 @@ class TemplateMatcher:
         './matching_screenshots/settings.png',
       'offline_earnings':
         './matching_screenshots/offline_earnings.png',
-      'upgrade_button':
-        './matching_screenshots/upgrade_button.png',
       'single_upgrade':
         './matching_screenshots/single_upgrade.png',
       'box':
@@ -284,6 +282,14 @@ class TemplateMatcher:
       mask = cv2.inRange(hsv_image, lower, upper)
       combined_mask = cv2.bitwise_or(combined_mask, mask)
     return cv2.bitwise_and(image, image, mask=combined_mask)
+
+  def color_ratio(self, image_hsv, ranges):
+    """Fraction of pixels inside any of the (lower, upper) HSV
+    ranges."""
+    mask = np.zeros(image_hsv.shape[:2], np.uint8)
+    for lower, upper in ranges:
+      mask |= cv2.inRange(image_hsv, np.array(lower), np.array(upper))
+    return np.count_nonzero(mask) / mask.size
 
   # ── Pixel color check ────────────────────────────────────
 
