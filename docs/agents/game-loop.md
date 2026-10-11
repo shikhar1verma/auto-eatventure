@@ -17,7 +17,7 @@ while True:
     actions.accept_food_delivery(...)       # truck available -> continue
     actions.invite_helper()                 # helper available -> continue
     actions.close_accidental_popups()       # every 150 iterations
-    actions.try_upgrade_items(count, ...)   # every 5th iteration
+    actions.try_upgrade_items()             # upgrade badge shown
     actions.open_boxes()                    # every 2nd iteration
     food_icons = actions.get_food_icon_locations()
     # reposition after new level (once)
@@ -31,7 +31,7 @@ while True:
 |-----------|--------|--------|
 | Every iteration | Capture screenshot | `device.capture_screenshot()` |
 | `count % 2 == 0` | Find and open boxes | `actions.open_boxes()` |
-| `count % 5 == 0` | Open upgrade menu, click upgrades | `actions.try_upgrade_items()` |
+| Upgrade button shows its red badge | Open upgrade menu, buy affordable upgrades | `actions.try_upgrade_items()` |
 | `count % 10 == 0` (no food) | Check next level / city | `actions.check_to_go_next_level()` |
 | `count % 150 == 0` | Close accidental popups | `actions.close_accidental_popups()` |
 | `FOOD_DELIVERY_ENABLED` and truck available | Accept the first Food Delivery order | `actions.accept_food_delivery()` |
@@ -148,7 +148,30 @@ hand), its position is tapped anyway, a WARNING goes to both
 `autoplay.log` and `key_events.log` and the bot continues.
 
 ### After transition:
-Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_started=True`, `new_level_first_food_icon_swipe=False`, `popular_dish_wait_for_upgrade=True`
+Reset all loop state: `swipe_count=0`, `nothing_to_update_count=0`, `new_level_first_food_icon_swipe=False`, `popular_dish_wait_for_upgrade=True`
+
+## Upgrades (upgrade menu)
+
+`GameActions.try_upgrade_items()` / `do_upgrades()` in
+`game_actions.py`:
+
+1. Every iteration the loop screenshot is checked for the red badge
+   on the upgrade button (bottom right), shown while an upgrade can
+   be bought. The badge pulses (size, tilt), so its red pixels are
+   counted (`is_having_upgrade()`); template matching missed ~1/3 of
+   the frames.
+2. The menu is opened and the first row's buy button is tapped in
+   rounds of `UPGRADE_CLICKS_PER_CHECK` (3). A bought upgrade leaves
+   the list and the next one moves to the first row.
+3. After each round a screenshot checks the first row's buy button
+   (`is_first_upgrade_affordable()`): blue = buy more, grey = too
+   expensive, close the menu. At most `UPGRADE_MAX_CLICKS` (50) taps
+   (a new level has many cheap upgrades).
+
+A usual visit takes ~2-3 s (3 taps + 1 check). Before, the menu was
+opened only every 5th iteration (~1 min with several stations, as
+each station takes ~4 s) and tapped blindly 10x (~4.7 s; 50x
+after a new level).
 
 ## Food Upgrade Logic
 

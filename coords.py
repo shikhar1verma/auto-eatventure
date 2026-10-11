@@ -53,6 +53,18 @@ single_upgrade_button_y = 1115
 close_upgrade_button_x = 1035
 close_upgrade_button_y = 908
 
+# Area of the red badge on the upgrade button (shown while an upgrade
+# can be bought). The badge pulses, the area fits its largest size.
+upgrade_badge_roi_left_x = 971
+upgrade_badge_roi_right_x = 1107
+upgrade_badge_roi_top_y = 2407
+upgrade_badge_roi_bottom_y = 2542
+
+# Area around the first row's buy button in the Upgrades dialog
+# (centered on single_upgrade_button)
+single_upgrade_roi_half_width_x = 100
+single_upgrade_roi_half_height_y = 34
+
 next_level_button_x = 127
 next_level_button_y = 2521
 
