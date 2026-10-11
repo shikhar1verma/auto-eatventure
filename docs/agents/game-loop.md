@@ -96,8 +96,12 @@ helper's Invite. The dialog closes by itself.
 - The "!" badge in the button corner pulses and is outside the
   template; the template covers the line under the person, which
   tells the states apart
-- After any attempt the checks pause for `HELPER_INVITE_PAUSE_S`
-  (60 s); failures close the dialog with `close_accidental_popups()`
+- Availability is confirmed on a second screenshot 1 s later, so a
+  frame caught between two states can't tap the ad offer
+- After a success the checks pause for `HELPER_INVITE_PAUSE_S`
+  (60 s), after a failure for `HELPER_INVITE_RETRY_S` (10 min; a
+  list that doesn't load costs ~15 s); failures close the dialog with
+  `close_accidental_popups()`
 - Success is logged only to `autoplay.log`
 
 ## Stale State Recovery

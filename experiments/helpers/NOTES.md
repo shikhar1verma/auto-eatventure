@@ -41,16 +41,29 @@ Scores (min SQDIFF in the ROI, 1080x2400):
 | ad icon only, no number (`s_20`) | 0.0298 |
 | ad offer with countdown | 0.048-0.059 |
 | working (green countdown) | 0.048-0.115 |
-| cooldown (grey) | 0.094-0.098 |
-| dialog over it (dimmed) | >= 0.63 |
+| cooldown (grey) | 0.093-0.098 |
+| dialog fading in (`hp_02`) | 0.075 |
+| dialog over it (dimmed) | >= 0.62 |
 
 Threshold 0.015. A crop with the whole person (`[338:448, 8:92]`) was
 worse: the "ad icon only" state scored 0.0137. At 720x1600,
 1220x2712 and 1440x3200 the available max is 0.0009 and the closest
 other state 0.029.
 
+The screenshots are ~5 s apart, so a short frame with an empty line
+between two states (e.g. "3s" -> ad offer) can't be ruled out; the
+bot confirms availability on a second screenshot 1 s later.
+
 Invite button: HSV template `[866:930, 642:782]` of
-`hp_03_dialog_loaded.png` -> `helper_invite.png`, threshold 0.9 in a
-ROI around the first row. Scores ~0.13-0.37 on all other screenshots.
-The dialog's red X is found by the existing `popup_close_cross`
-(0.98), so `close_accidental_popups()` closes it on a failure.
+`hp_03_dialog_loaded.png` -> `helper_invite.png`, threshold 0.8 in a
+ROI around the first row (match 0.95 after scaling). Scores
+~0.13-0.37 on all other screenshots. The loaded dialog's red X is
+found by the existing `popup_close_cross` (0.98), so
+`close_accidental_popups()` closes it on a failure.
+
+## Unverified
+
+- Fully shown "Loading..." dialog (list never loads, e.g. offline):
+  its X is elsewhere and was only seen fading in (0.76), so the close
+  after the 10 s timeout is unconfirmed. Retried after 10 min.
+- What happens to a working helper on renovation / new city.

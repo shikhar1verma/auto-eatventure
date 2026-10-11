@@ -89,7 +89,7 @@ All templates are in `matching_screenshots/` and registered in `TemplateMatcher.
 | `food_delivery_available.png` | `get_food_delivery_truck_coords()` (left button column) | BGR SQDIFF | < 0.02 |
 | `food_delivery_accept.png` | `is_having_food_delivery_accept()` (ROI around the first order's Accept) | HSV | 0.9 |
 | `helper_available.png` | `is_having_helper_available()` (ROI around the helper button) | BGR SQDIFF | < 0.015 |
-| `helper_invite.png` | `is_having_helper_invite()` (ROI around the first helper's Invite) | HSV | 0.9 |
+| `helper_invite.png` | `is_having_helper_invite()` (ROI around the first helper's Invite) | HSV | 0.8 |
 | `no_boost_indicator_2x.png` | (available) | HSV | 0.92 |
 | `ads_crosses/cross1.png` | (available) | Grayscale | 0.8 |
 

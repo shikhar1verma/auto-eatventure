@@ -192,7 +192,7 @@ class GameActions:
     hh = self.sc.helper_invite_roi_half_height_y
     roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
     return self.matcher.is_hsv_match(
-      roi, 'helper_invite', threshold=0.9)
+      roi, 'helper_invite', threshold=0.8)
 
   # ── Game actions ──────────────────────────────────────────
 
@@ -546,6 +546,13 @@ class GameActions:
     tapped) and a ~30 min cooldown follows. The dialog closes by
     itself after Invite. Returns True when the helper was invited.
     """
+    # Confirm on a fresh screenshot, so a frame caught between two
+    # states (e.g. countdown -> ad offer) doesn't tap the ad offer
+    time.sleep(1)
+    self.device.capture_screenshot()
+    if not self.is_having_helper_available():
+      log.info('Helper button no longer available')
+      return False
     self.device.click(self.loc.helper_button_coords)
     if not self._wait_for_helper_invite():
       log.info('Invite a helper dialog not found')
