@@ -48,6 +48,13 @@ class AutoEatventure:
     self.actions = GameActions(
       self.device, self.matcher, self.loc)
 
+  def _select_popular_dish(self):
+    """Select Popular Dish; return the time of the next try."""
+    delay = (POPULAR_DISH_COOLDOWN_S
+             if self.actions.select_popular_dish()
+             else POPULAR_DISH_RETRY_S)
+    return time.monotonic() + delay
+
   def start_playing_game(self):
     """Main game loop — runs indefinitely."""
     count = 0
@@ -67,10 +74,7 @@ class AutoEatventure:
       if (POPULAR_DISH_ENABLED
           and not popular_dish_wait_for_upgrade
           and time.monotonic() >= popular_dish_next_try):
-        delay = (POPULAR_DISH_COOLDOWN_S
-                 if self.actions.select_popular_dish()
-                 else POPULAR_DISH_RETRY_S)
-        popular_dish_next_try = time.monotonic() + delay
+        popular_dish_next_try = self._select_popular_dish()
 
       self.device.capture_screenshot()
 
