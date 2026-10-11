@@ -11,7 +11,7 @@ The main game loop lives in `AutoEatventure.start_playing_game()` at `adb_autopl
 ```python
 while True:
     count += 1
-    swipe_count = actions.handle_stale_state(...)
+    nothing_to_update_count, swipe_count = actions.handle_stale_state(...)
     actions.select_popular_dish()           # when popular_dish_next_try passed
     device.capture_screenshot()
     actions.accept_food_delivery(...)       # truck available -> continue
@@ -109,10 +109,15 @@ helper's Invite. The dialog closes by itself.
 Handled by `GameActions.handle_stale_state()` in `game_actions.py`:
 
 - **`nothing_to_update_count >= 15`** (every 5th after): Swipe pattern to reveal hidden elements
-- **`nothing_to_update_count > 50`**: Force-restart the app
+- **`nothing_to_update_count > 50`** (`STALE_RECOVERY_THRESHOLD`):
+  bring the game to the foreground (`device.start_app()`) and tap the
+  null click spot, then reset `nothing_to_update_count` to 0, so this
+  repeats once per ~50 empty loops (~2-3 min), not on every loop. The
+  game is **not** restarted: `start_app()` only brings a running game
+  to the foreground (a real restart would need `close_app()` first).
 
-Swipe pattern cycles through 5 down-swipes then 5 up-swipes
-(`SWIPES_PER_DIRECTION = 5`), each 650px at reference resolution —
+Swipe pattern cycles through 7 down-swipes then 7 up-swipes
+(`SWIPES_PER_DIRECTION = 7`), each 650px at reference resolution —
 chosen so the total distance per direction still spans a tall level
 before reversing.
 

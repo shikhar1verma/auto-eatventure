@@ -106,7 +106,7 @@ def get_key_logger():
   """Get the key events logger.
 
   Writes only to logs/key_events.log (no console output).
-  Use for key milestones: level transitions, restarts, etc.
+  Use for key milestones: level transitions, stale state, etc.
 
   Usage:
     from logger import get_key_logger

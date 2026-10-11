@@ -100,8 +100,9 @@ class AutoEatventure:
     while True:
       count += 1
 
-      swipe_count = self.actions.handle_stale_state(
-        nothing_to_update_count, swipe_count)
+      nothing_to_update_count, swipe_count = (
+        self.actions.handle_stale_state(
+          nothing_to_update_count, swipe_count))
 
       if (POPULAR_DISH_ENABLED
           and not popular_dish_wait_for_upgrade
