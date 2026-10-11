@@ -7,15 +7,15 @@ All coordinates below are DEVICE pixels (1080x2400).
 Purpose (from user): mainly to complete a quest. Activate Food
 Delivery whenever possible.
 
-## Flow (manual, in progress)
+The screenshots referenced here are kept only locally (not committed,
+~10 MB), same as in `experiments/popular_dish/`.
+
+## Flow (verified manually)
 
 1. Main screen: second white button top-left (below the person
-   button) with a delivery truck at ~(66, 570). Always same place,
-   only the icon differs:
-   - black truck with speed lines -> available
-     (`fd_01_available.png`)
-   - grey/faded truck -> running or cooldown (seen in earlier
-     screenshots, to confirm)
+   button) with a delivery truck at ~(66, 570). Usually there, but it
+   can move (see "Truck button states"); the icon shows the state
+   (`fd_01_available.png` = available).
 2. Tap truck -> dialog **"Food Delivery"**, section "New Orders"
    (`fd_02_after_truck_tap.png`), 3 order rows (customer, food icon
    with count, coin reward). Each row has buttons:
@@ -46,8 +46,14 @@ Delivery whenever possible.
 
 Position is NOT fixed: usually button center ~(66, 570), but when
 the person button above is missing the truck button moves up to
-~(66, 390) (`open_dialog.png`-like screens). => search in a left
-column ROI (x 0..200, y 250..850) and tap the found position.
+~(66, 390) (seen only in Popular Dish era screenshots with the truck
+grey, never in the available state - not verified for tapping).
+=> search in a left column ROI (x 0..200, y 250..850) and tap the
+found position.
+
+Not verified yet: a first order with a "Best Deal" badge. If the
+badge shifts the Accept button out of its ROI, the bot just closes
+the dialog and tries again after the 60 s pause.
 
 ## Detection analysis (template = truck lower half + empty text area,
 ## device crop [540:630, 8:128] of fd_05_available_excl_1.png)
@@ -63,10 +69,11 @@ column ROI (x 0..200, y 250..850) and tap the found position.
 ## Implementation (branch foodDelivery)
 
 - `FOOD_DELIVERY_ENABLED="1"` in `.env`, off by default.
-- Every loop screenshot: `get_food_delivery_coords()` (SQDIFF, ~15 ms)
-  -> `accept_food_delivery()`: tap truck, verify the first order's
-  Accept button (HSV template, ROI), tap Accept, verify the dialog
-  closed. Success logged to autoplay.log only (user: key_events.log
+- Every loop screenshot: `get_food_delivery_truck_coords()`
+  (SQDIFF, ~15 ms) -> `accept_food_delivery()`: tap truck, verify the
+  first order's Accept button (HSV template, ROI), tap Accept, verify
+  the dialog closed. After any attempt the checks pause for 60 s
+  (code review: a falsely confirmed accept must not loop). Success logged to autoplay.log only (user: key_events.log
   would get cluttered).
 - Templates: `food_delivery_available.png` (from
   `fd_05_available_excl_1.png` [540:630, 8:128]),

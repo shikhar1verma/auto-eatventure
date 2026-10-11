@@ -14,7 +14,7 @@ while True:
     swipe_count = actions.handle_stale_state(...)
     actions.select_popular_dish()           # when popular_dish_next_try passed
     device.capture_screenshot()
-    actions.accept_food_delivery(...)       # when the truck is available
+    actions.accept_food_delivery(...)       # truck available -> continue
     actions.close_accidental_popups()       # every 150 iterations
     actions.try_upgrade_items(count, ...)   # every 5th iteration
     actions.open_boxes()                    # every 2nd iteration
@@ -58,19 +58,23 @@ Every tap is verified by the Select/Start/Stop templates.
 ### Food Delivery (quest farming, optional)
 
 Disabled by default; enable with `FOOD_DELIVERY_ENABLED="1"` in `.env`.
-Every screenshot is checked (~15 ms) for an available delivery truck
-button in the left button column (`get_food_delivery_coords()`). If
-found, `accept_food_delivery()` taps it, verifies the "Food Delivery"
-dialog by the first order's Accept button and taps Accept. The dialog
-closes by itself and the delivery completes without any further tap.
+The screenshot of every loop iteration is checked (~15 ms) for an
+available delivery truck button in the left button column
+(`get_food_delivery_truck_coords()`). If found,
+`accept_food_delivery()` taps it, verifies the "Food Delivery" dialog
+by the first order's Accept button and taps Accept. The dialog closes
+by itself and the delivery completes without any further tap. The
+iteration then ends (`continue`), so its other steps are skipped.
 
 - Truck states: available (black, nothing under it), running (black +
   green "N/M"), cooldown (grey + "Xm Ys", ~3 min), unavailable (grey)
 - The button moves up when the button above it is missing, so it is
   searched in an area and tapped where it was found
+- After any attempt the checks pause for `FOOD_DELIVERY_PAUSE_S`
+  (60 s), so a failure can't loop; a delivery and its cooldown take
+  longer anyway
 - Failure (dialog not open / still open): it is closed with
-  `close_accidental_popups()` and the next try waits
-  `FOOD_DELIVERY_RETRY_S` (60 s)
+  `close_accidental_popups()`
 - Success is logged only to `autoplay.log` (too frequent for
   `key_events.log`)
 

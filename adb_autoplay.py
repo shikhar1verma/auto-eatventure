@@ -42,9 +42,11 @@ POPULAR_DISH_RETRY_S = 60
 FOOD_DELIVERY_ENABLED = os.getenv(
   "FOOD_DELIVERY_ENABLED", "0").strip() == "1"
 
-# Availability is checked on every screenshot (cheap). After a failed
-# attempt the next one waits a while, so the bot doesn't keep tapping.
-FOOD_DELIVERY_RETRY_S = 60
+# Availability is checked on the loop screenshot (cheap). After any
+# attempt the checks pause, so a failure that leaves the truck
+# available can't make the bot tap it in a tight loop. A delivery and
+# its cooldown take longer than the pause anyway.
+FOOD_DELIVERY_PAUSE_S = 60
 
 
 class AutoEatventure:
@@ -62,13 +64,6 @@ class AutoEatventure:
     delay = (POPULAR_DISH_COOLDOWN_S
              if self.actions.select_popular_dish()
              else POPULAR_DISH_RETRY_S)
-    return time.monotonic() + delay
-
-  def _accept_food_delivery(self, truck_coords):
-    """Accept Food Delivery; return the time of the next try."""
-    delay = (0
-             if self.actions.accept_food_delivery(truck_coords)
-             else FOOD_DELIVERY_RETRY_S)
     return time.monotonic() + delay
 
   def start_playing_game(self):
@@ -97,10 +92,11 @@ class AutoEatventure:
 
       if (FOOD_DELIVERY_ENABLED
           and time.monotonic() >= food_delivery_next_try):
-        truck_coords = self.actions.get_food_delivery_coords()
+        truck_coords = self.actions.get_food_delivery_truck_coords()
         if truck_coords:
-          food_delivery_next_try = self._accept_food_delivery(
-            truck_coords)
+          self.actions.accept_food_delivery(truck_coords)
+          food_delivery_next_try = (
+            time.monotonic() + FOOD_DELIVERY_PAUSE_S)
           continue
 
       if count % 150 == 0:

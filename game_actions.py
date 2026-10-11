@@ -135,7 +135,7 @@ class GameActions:
         return state
     return None
 
-  def get_food_delivery_coords(self):
+  def get_food_delivery_truck_coords(self):
     """Return [x, y] of the truck button when a Food Delivery is
     available (black truck, no counter / countdown), else None."""
     left = self.sc.food_delivery_roi_left_x
@@ -487,7 +487,7 @@ class GameActions:
   def accept_food_delivery(self, truck_coords):
     """Open Food Delivery and accept the first order.
 
-    Used only to complete a quest. The dialog closes by itself after
+    Used mainly to complete a quest. The dialog closes by itself after
     Accept. Returns True when the order was accepted.
     """
     self.device.click(truck_coords)
