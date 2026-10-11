@@ -33,6 +33,9 @@ OPEN_BUTTON_TAP_DELAY_S = 1
 # Time for the Active Skills / Select a dish dialogs to animate
 SKILL_DIALOG_DELAY_S = 1.5
 
+# Time for the Food Delivery dialog to open / close
+FOOD_DELIVERY_DIALOG_DELAY_S = 1.5
+
 POPULAR_DISH_BUTTON_TEMPLATES = {
   'select': 'popular_dish_select',
   'start': 'popular_dish_start',
@@ -131,6 +134,33 @@ class GameActions:
       if self.matcher.is_hsv_match(roi, template_key, threshold=0.9):
         return state
     return None
+
+  def get_food_delivery_coords(self):
+    """Return [x, y] of the truck button when a Food Delivery is
+    available (black truck, no counter / countdown), else None."""
+    left = self.sc.food_delivery_roi_left_x
+    right = self.sc.food_delivery_roi_right_x
+    top = self.sc.food_delivery_roi_top_y
+    bottom = self.sc.food_delivery_roi_bottom_y
+    roi = self._bgr()[top:bottom, left:right]
+    loc = self.matcher.match_bgr_sqdiff(
+      roi, 'food_delivery_available')
+    if loc is None:
+      return None
+    th, tw = self.matcher.templates[
+      'food_delivery_available']['simple'].shape[:2]
+    return [left + loc[0] + tw // 2, top + loc[1] + th // 2]
+
+  def is_having_food_delivery_accept(self):
+    """Accept button of the first order in the Food Delivery
+    dialog."""
+    x = self.sc.food_delivery_accept_x
+    y = self.sc.food_delivery_accept_y
+    hw = self.sc.food_delivery_accept_roi_half_width_x
+    hh = self.sc.food_delivery_accept_roi_half_height_y
+    roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
+    return self.matcher.is_hsv_match(
+      roi, 'food_delivery_accept', threshold=0.9)
 
   # ── Game actions ──────────────────────────────────────────
 
@@ -453,6 +483,29 @@ class GameActions:
     for _ in range(2):
       if not self.close_accidental_popups():
         break
+
+  def accept_food_delivery(self, truck_coords):
+    """Open Food Delivery and accept the first order.
+
+    Used only to complete a quest. The dialog closes by itself after
+    Accept. Returns True when the order was accepted.
+    """
+    self.device.click(truck_coords)
+    time.sleep(FOOD_DELIVERY_DIALOG_DELAY_S)
+    self.device.capture_screenshot()
+    if not self.is_having_food_delivery_accept():
+      log.info('Food Delivery dialog not found')
+      self.close_accidental_popups()
+      return False
+    self.device.click(self.loc.food_delivery_accept_coords)
+    time.sleep(FOOD_DELIVERY_DIALOG_DELAY_S)
+    self.device.capture_screenshot()
+    if self.is_having_food_delivery_accept():
+      log.info('Food Delivery dialog still open after Accept')
+      self.close_accidental_popups()
+      return False
+    log.info('Food Delivery accepted (first order)')
+    return True
 
   def redeem_investor(self):
     """Find and claim investor reward."""

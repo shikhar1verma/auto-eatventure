@@ -37,6 +37,15 @@ POPULAR_DISH_ENABLED = os.getenv(
 POPULAR_DISH_COOLDOWN_S = 10 * 60 + 30
 POPULAR_DISH_RETRY_S = 60
 
+# Optional: accept the first Food Delivery order whenever one is
+# available, mainly to complete a quest. Off by default.
+FOOD_DELIVERY_ENABLED = os.getenv(
+  "FOOD_DELIVERY_ENABLED", "0").strip() == "1"
+
+# Availability is checked on every screenshot (cheap). After a failed
+# attempt the next one waits a while, so the bot doesn't keep tapping.
+FOOD_DELIVERY_RETRY_S = 60
+
 
 class AutoEatventure:
   """Main bot orchestrator."""
@@ -55,6 +64,13 @@ class AutoEatventure:
              else POPULAR_DISH_RETRY_S)
     return time.monotonic() + delay
 
+  def _accept_food_delivery(self, truck_coords):
+    """Accept Food Delivery; return the time of the next try."""
+    delay = (0
+             if self.actions.accept_food_delivery(truck_coords)
+             else FOOD_DELIVERY_RETRY_S)
+    return time.monotonic() + delay
+
   def start_playing_game(self):
     """Main game loop — runs indefinitely."""
     count = 0
@@ -64,6 +80,7 @@ class AutoEatventure:
     new_level_first_food_icon_swipe = False
     popular_dish_next_try = 0
     popular_dish_wait_for_upgrade = False
+    food_delivery_next_try = 0
 
     while True:
       count += 1
@@ -77,6 +94,14 @@ class AutoEatventure:
         popular_dish_next_try = self._select_popular_dish()
 
       self.device.capture_screenshot()
+
+      if (FOOD_DELIVERY_ENABLED
+          and time.monotonic() >= food_delivery_next_try):
+        truck_coords = self.actions.get_food_delivery_coords()
+        if truck_coords:
+          food_delivery_next_try = self._accept_food_delivery(
+            truck_coords)
+          continue
 
       if count % 150 == 0:
         self.actions.close_accidental_popups()
@@ -123,4 +148,6 @@ bot.actions.init_game()
 key_log.info("START - Bot started")
 log.info('Popular Dish selection: %s',
          'enabled' if POPULAR_DISH_ENABLED else 'disabled')
+log.info('Food Delivery: %s',
+         'enabled' if FOOD_DELIVERY_ENABLED else 'disabled')
 bot.start_playing_game()

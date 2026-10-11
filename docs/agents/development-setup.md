@@ -59,6 +59,10 @@ TEMPLATE_SCALE_OVERRIDE=""
 # complete the Masterchef "select a popular dish" quest. Default off.
 POPULAR_DISH_ENABLED="0"
 
+# Optional: "1" = accept the first Food Delivery order whenever one is
+# available (mainly for the Food Delivery quest). Default off.
+FOOD_DELIVERY_ENABLED="0"
+
 # Logging: console level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 LOG_LEVEL="INFO"
 

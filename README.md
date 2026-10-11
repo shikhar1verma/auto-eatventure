@@ -217,6 +217,7 @@ Optional features are switched on in `.env` (see `.env-sample`). All are off by 
 | Setting | What it does |
 |---------|--------------|
 | `POPULAR_DISH_ENABLED="1"` | Selects the **Popular Dish** active skill (first dish), starts it and immediately stops it again. The skill effect is not used at all; it is only useful to complete the **Masterchef quest** for selecting a popular dish. Repeats after every renovation / new city (once the first stand is open) and every ~10 min (skill cooldown). |
+| `FOOD_DELIVERY_ENABLED="1"` | Accepts **Food Delivery** orders: whenever the delivery truck button (top-left) is available, opens it and accepts the first order. The delivery completes by itself, then a ~3 min cooldown follows. Useful mainly to complete the Food Delivery quest. |
 
 
 ## Documentation

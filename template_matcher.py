@@ -92,6 +92,10 @@ class TemplateMatcher:
         './matching_screenshots/popular_dish_start.png',
       'popular_dish_stop':
         './matching_screenshots/popular_dish_stop.png',
+      'food_delivery_available':
+        './matching_screenshots/food_delivery_available.png',
+      'food_delivery_accept':
+        './matching_screenshots/food_delivery_accept.png',
       'ads_crosses': {
         'cross1':
           './matching_screenshots/ads_crosses/cross1.png',
@@ -211,6 +215,24 @@ class TemplateMatcher:
     template = self.templates[template_key]['grayscale']
     return self.find_template(
       screenshot_gray, template, threshold)
+
+  def match_bgr_sqdiff(self, screenshot_bgr, template_key,
+                       max_diff=0.02):
+    """Match raw BGR by squared difference. Returns (x,y) or None.
+
+    Unlike TM_CCOEFF_NORMED it is sensitive to brightness, so it
+    can tell a black icon from the same icon greyed out.
+    Lower diff = better match (0 = identical).
+    """
+    template = self.templates[template_key]['simple']
+    result = cv2.matchTemplate(
+      screenshot_bgr, template, cv2.TM_SQDIFF_NORMED)
+    min_val, _, min_loc, _ = cv2.minMaxLoc(result)
+    if self.debug:
+      log.debug("sqdiff %s: %.4f", template_key, min_val)
+    if min_val < max_diff:
+      return min_loc
+    return None
 
   def is_hsv_match(self, screenshot_hsv, template_key,
                    threshold=0.8):

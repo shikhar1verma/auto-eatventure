@@ -103,6 +103,20 @@ first_dish_2_tiles_x = 486
 first_dish_1_tile_x = 610
 first_dish_y = 1304
 
+# ── Food Delivery ─────────────────────────────────────────────────────────────
+# Truck button in the left button column. It moves up when the button
+# above it is missing, so it is searched in this area.
+food_delivery_roi_left_x = 0
+food_delivery_roi_right_x = 226
+food_delivery_roi_top_y = 283
+food_delivery_roi_bottom_y = 960
+
+# Accept button of the first order in the "Food Delivery" dialog
+food_delivery_accept_x = 610
+food_delivery_accept_y = 1166
+food_delivery_accept_roi_half_width_x = 147
+food_delivery_accept_roi_half_height_y = 79
+
 # ── Swipe Coordinates ─────────────────────────────────────────────────────────
 # Distance kept to 650px: the usable playfield height (excluding side
 # buttons/ad banner zones) is only ~820px, so a swipe close to that
