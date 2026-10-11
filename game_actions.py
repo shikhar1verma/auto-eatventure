@@ -204,8 +204,8 @@ class GameActions:
     return None
 
   def get_food_delivery_truck_coords(self):
-    """Return [x, y] of the truck button when a Food Delivery is
-    available (black truck, no counter / countdown), else None."""
+    """Return the tap [x, y] of the truck button when a Food Delivery
+    is available (black truck, no counter / countdown), else None."""
     left = self.sc.food_delivery_roi_left_x
     right = self.sc.food_delivery_roi_right_x
     top = self.sc.food_delivery_roi_top_y
@@ -215,9 +215,9 @@ class GameActions:
       roi, 'food_delivery_available')
     if loc is None:
       return None
-    th, tw = self.matcher.templates[
-      'food_delivery_available']['simple'].shape[:2]
-    return [left + loc[0] + tw // 2, top + loc[1] + th // 2]
+    th = self.matcher.templates[
+      'food_delivery_available']['simple'].shape[0]
+    return [self.sc.side_button_tap_x, top + loc[1] + th // 2]
 
   def is_having_food_delivery_accept(self):
     """Accept button of the first order in the Food Delivery

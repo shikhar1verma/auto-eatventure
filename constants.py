@@ -141,7 +141,7 @@ class Constants:
         }
 
         self.helper_button_coords = {
-            'x': sc.helper_button_x,
+            'x': sc.side_button_tap_x,
             'y': sc.helper_button_y
         }
 
