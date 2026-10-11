@@ -72,5 +72,16 @@ column ROI (x 0..200, y 250..850) and tap the found position.
   `fd_05_available_excl_1.png` [540:630, 8:128]),
   `food_delivery_accept.png` (from `fd_02_after_truck_tap.png`
   [994:1080, 444:636]), both upscaled to reference resolution.
-- Open question (user will check): what happens to a running delivery
-  on renovation / fly to a new city.
+- What happens to a running delivery on renovation / fly is not
+  investigated (user: doesn't matter much and it is rare).
+
+## Observed in the bot run (2026-10-11)
+
+- Accepted 11:39:49, renovation clicked ~11:40:57, at ~11:41:30 the
+  truck showed cooldown "1m 51s" (`fd_06_after_renovation.png`), so the
+  cooldown started ~11:40:20 = the delivery had already finished
+  ~30 s after Accept, before the renovation. => Renovation does NOT
+  reset the delivery cooldown.
+- Second renovation 11:50:54, cooldown started ~11:50:29: again the
+  delivery (accepted 11:50:02) finished ~30 s after Accept. Deliveries
+  are short, so a renovation rarely hits a running one.
