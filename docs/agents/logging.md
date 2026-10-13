@@ -94,6 +94,7 @@ A separate file recording only key milestones. Useful for tracking progress (e.g
 | `POPULAR DISH` | Popular Dish selected and stopped (optional) | `POPULAR DISH - Selected first dish` |
 | `WARNING` | First stand's "Open" button not found after renovate / fly (should not normally happen) | `WARNING - Open button not found` |
 | `WARNING` | "Welcome to <city>" dialog's "Okay" button not found after fly (should not normally happen) | `WARNING - Okay button not found` |
+| `ERROR` | Top bar line not found at start, the null spot stays at the fallback from `coords.py`; the search must be fixed for this phone | `ERROR - Top bar not found (<reason>), null spot at fallback (x, y), popups may stay open or an ad may start; fix place_null_click_below_top_bar()` |
 
 ### Usage:
 

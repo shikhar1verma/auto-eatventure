@@ -20,6 +20,11 @@ first_lemonade_stand_open_y = 1604
 settings_x = 1134
 settings_y = 161
 
+# Area around the white settings gear: a dialog dims it, so it tells
+# whether a dialog covers the screen (station popups don't dim it)
+settings_roi_half_width_x = 30
+settings_roi_half_height_y = 30
+
 cloud_save_x = 554
 cloud_save_y = 1419
 
@@ -84,11 +89,15 @@ fly_next_city_button_y = 1892
 welcome_city_ok_button_x = 618
 welcome_city_ok_button_y = 1695
 
-# Empty spot (floor below the top bar) tapped to close station popups.
-# On OnePlus Nord 3 the top bar catches taps down to ~300 px of 2772,
-# so a tap at y=278 (284 there) left the popup open.
+# Empty spot (restaurant just below the top bar) tapped to close
+# station popups. y is only a fallback: the status bar height differs
+# between phones, so at start the spot is placed below the top bar's
+# black line (place_null_click_below_top_bar()). Too high, the top bar
+# catches the tap and the popup stays open (OnePlus Nord 3); too low,
+# it can hit a customer bubble, whose Investor dialog starts an ad
+# with Claim (Xiaomi at y=340, 301 there).
 null_click_x = 886
-null_click_y = 340
+null_click_y = 278
 
 chest_x = 110
 chest_y = 734
