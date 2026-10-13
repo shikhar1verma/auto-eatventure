@@ -77,6 +77,27 @@ UPGRADES_DIALOG_MIN_RATIO = 0.4
 # loops kept missing the stations and went stale)
 UPGRADE_DIALOG_CLOSE_DELAY_S = 0.8
 
+# The white settings gear (top right) has max brightness 255 on the
+# restaurant, 2-11 under a dialog and 160-236 while a dialog animates.
+# Station popups don't dim it.
+SETTINGS_GEAR_MIN_BRIGHTNESS = 200
+# Dialogs closed at start before the null spot is placed, at most
+DIMMING_DIALOG_CLOSE_TRIES = 5
+# The top bar ends with a black line across the screen (Xiaomi y=226,
+# OnePlus Nord 3 y=284; the status bar height differs). Black row =
+# over 90 % of its pixels have every channel below 10. Searched in
+# this band of the screen height: ads and loading screens have black
+# rows higher up.
+TOP_BAR_LINE_MAX_VALUE = 10
+TOP_BAR_LINE_MIN_RATIO = 0.9
+TOP_BAR_BAND_TOP = 0.06
+TOP_BAR_BAND_BOTTOM = 0.15
+# The null spot is this far (reference px) below the line: still on
+# the restaurant (the top bar catches taps, popups stay open) but
+# above the tables, whose customer bubbles open dialogs (Investor's
+# Claim starts an ad)
+NULL_CLICK_BELOW_TOP_BAR_Y = 22
+
 POPULAR_DISH_BUTTON_TEMPLATES = {
   'select': 'popular_dish_select',
   'start': 'popular_dish_start',
@@ -219,6 +240,36 @@ class GameActions:
     th = self.matcher.templates[
       'food_delivery_available']['simple'].shape[0]
     return [self.sc.side_button_tap_x, top + loc[1] + th // 2]
+
+  def is_screen_dimmed(self):
+    """A dialog dims the white settings gear."""
+    x = self.sc.settings_x
+    y = self.sc.settings_y
+    hw = self.sc.settings_roi_half_width_x
+    hh = self.sc.settings_roi_half_height_y
+    roi = self._gray()[y - hh:y + hh, x - hw:x + hw]
+    return roi.max() < SETTINGS_GEAR_MIN_BRIGHTNESS
+
+  def get_top_bar_line_y(self):
+    """Return the y of the top bar's black line (end of the first run
+    of black rows in the top band), else None.
+
+    The first run, not the lowest black row: a black row lower in the
+    restaurant (e.g. a night city) must not move the spot down. A run
+    reaching the band bottom is no line (e.g. a black screen).
+    """
+    height = self._bgr().shape[0]
+    top = round(height * TOP_BAR_BAND_TOP)
+    bottom = round(height * TOP_BAR_BAND_BOTTOM)
+    band = self._bgr()[top:bottom].max(axis=2) < TOP_BAR_LINE_MAX_VALUE
+    black_rows = band.mean(axis=1) > TOP_BAR_LINE_MIN_RATIO
+    line_y = None
+    for i, black in enumerate(black_rows):
+      if black:
+        line_y = top + i
+      elif line_y is not None:
+        return line_y
+    return None
 
   def is_having_food_delivery_accept(self):
     """Accept button of the first order in the Food Delivery
@@ -761,6 +812,67 @@ class GameActions:
       log.info('Init: waiting for game to be ready')
       time.sleep(5)
     log.info('Init: game is ready')
+
+  def place_null_click_below_top_bar(self):
+    """Place the null spot just below the top bar's black line.
+
+    Called once at start. The status bar height differs between
+    phones, so the spot can't be derived from the resolution. If the
+    line is not found, the fallback from coords.py stays and an ERROR
+    is logged.
+    """
+    if not self._close_dimming_dialogs():
+      self._log_null_spot_fallback('screen stays dimmed by a dialog')
+      return
+    line_y = self.get_top_bar_line_y()
+    if line_y is None:
+      self._log_null_spot_fallback('no black line in the top band')
+      return
+    coords = self.loc.null_click_coords
+    coords['y'] = line_y + round(
+      NULL_CLICK_BELOW_TOP_BAR_Y * self.sc.y_scale)
+    log.info('Null spot below the top bar (y=%d): (%d, %d)',
+             line_y, coords['x'], coords['y'])
+
+  def _close_dimming_dialogs(self):
+    """Close dialogs that dim the screen (on a dimmed screen the line
+    is found too low). Returns True when the screen is not dimmed."""
+    # init_game() may have just tapped a dialog that is fading out
+    time.sleep(1)
+    self.device.capture_screenshot()
+    for _ in range(DIMMING_DIALOG_CLOSE_TRIES):
+      if not self.is_screen_dimmed():
+        return True
+      if self.is_having_welcome_city_okay():
+        log.info('Start: closing "Welcome to <city>" dialog')
+        self._wait_and_click_welcome_okay()
+      elif self.is_having_open_button():
+        log.info('Start: tapping first stand "Open" button')
+        self._wait_and_click_open_button()
+      elif not self.close_accidental_popups():
+        # A tap outside a modal dialog closes it and doesn't reach the
+        # restaurant behind it (Back doesn't close dialogs)
+        log.info('Start: dimmed screen without a red X, tapping '
+                 'outside the dialog')
+        self.device.click(self.loc.null_click_coords)
+      time.sleep(1)
+      self.device.capture_screenshot()
+    return not self.is_screen_dimmed()
+
+  def _log_null_spot_fallback(self, reason):
+    coords = self.loc.null_click_coords
+    log.error(
+      'Top bar not found (%s), the null spot stays at the fallback '
+      '(%d, %d) from coords.py. Risky: if the top bar covers it, '
+      'station popups stay open; if it is too low, it can hit a '
+      'customer bubble, open the Investor dialog and start an ad. Fix: '
+      'check a screenshot of this phone and adjust '
+      'place_null_click_below_top_bar() in game_actions.py.',
+      reason, coords['x'], coords['y'])
+    key_log.error(
+      "ERROR - Top bar not found (%s), null spot at fallback "
+      "(%d, %d); fix place_null_click_below_top_bar()",
+      reason, coords['x'], coords['y'])
 
   def start_game_for_first_time(self):
     """Handle first-time game startup dialogs."""

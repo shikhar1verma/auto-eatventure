@@ -17,6 +17,47 @@ renovation), via the same helpers as the level transition. Every
 wait logs `Init: waiting for game to be ready`, so an unknown dialog
 shows up in the log instead of a silent hang.
 
+## Null spot (ad protection)
+
+`null_click_coords` is the spot tapped to close station popups. It
+must be on the restaurant (the top bar catches taps there, so the
+popup stays open) but must not hit a customer bubble: on Xiaomi the
+spot at y=340 hit the investor's bubble, its "Investor" dialog opened
+and its blue **Claim** button (~(540, 1548), where the bot taps
+stations) started an ad the bot could not leave for hours.
+
+The spot can't be derived from the resolution, the status bar height
+differs between phones. The top bar ends with a black line across
+the screen (Xiaomi 1080x2400: y=226, OnePlus Nord 3 1240x2772:
+y=284), so `GameActions.place_null_click_below_top_bar()` finds it
+once at start, right after `init_game()`:
+
+1. **Close dialogs.** On a dimmed screen the line comes out wrong, so
+   a fresh screenshot is checked first: a dialog dims the white
+   settings gear (max brightness < `SETTINGS_GEAR_MIN_BRIGHTNESS`,
+   200, around `settings_x/y`; station popups don't dim it). A dimming
+   dialog is closed by its "Okay" (Welcome to <city>), "Open" (first
+   stand) or red X, else by a tap outside it on the fallback spot
+   (Back doesn't close dialogs). Then 1 s wait and a new check, at
+   most `DIMMING_DIALOG_CLOSE_TRIES` (5) times.
+2. **Find the line.** Rows with over 90 % black pixels (every channel
+   < 10) in the band 6-15 % of the screen height (ads and loading
+   screens have black rows higher up). The line is the **end of the
+   first run** of black rows, so a black row lower in the restaurant
+   (e.g. a night city) can't move the spot down; a run reaching the
+   band bottom is no line.
+3. **Place the spot** `NULL_CLICK_BELOW_TOP_BAR_Y` (22 reference px)
+   below the line: still on the restaurant, above the tables. Xiaomi:
+   y=245, OnePlus: y=306. x stays from `coords.py`. Logged as
+   `Null spot below the top bar (y=226): (784, 245)`.
+4. **Fallback.** If the screen stays dimmed or no line is found, the
+   spot stays at `null_click_x/y` from `coords.py` (y=278) and an
+   ERROR goes to `autoplay.log` and `key_events.log` with the reason,
+   the risk and the fix (check a screenshot of the phone, adjust
+   `place_null_click_below_top_bar()`).
+
+Nothing of this runs in the game loop.
+
 ## Loop Structure
 
 ```python

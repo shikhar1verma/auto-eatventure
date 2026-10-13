@@ -166,6 +166,7 @@ log.info('START - Bot started')
 bot = AutoEatventure()
 bot.device.start_app()
 bot.actions.init_game()
+bot.actions.place_null_click_below_top_bar()
 key_log.info("START - Bot started")
 log.info('Popular Dish selection: %s',
          'enabled' if POPULAR_DISH_ENABLED else 'disabled')
