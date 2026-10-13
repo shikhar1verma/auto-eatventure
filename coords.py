@@ -95,7 +95,7 @@ welcome_city_ok_button_y = 1695
 # black line (place_null_click_below_top_bar()). Too high, the top bar
 # catches the tap and the popup stays open (OnePlus Nord 3); too low,
 # it can hit a customer bubble, whose Investor dialog starts an ad
-# with Claim (Xiaomi at y=340).
+# with Claim (Xiaomi at y=340, 301 there).
 null_click_x = 886
 null_click_y = 278
 

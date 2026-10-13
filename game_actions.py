@@ -92,6 +92,9 @@ TOP_BAR_LINE_MAX_VALUE = 10
 TOP_BAR_LINE_MIN_RATIO = 0.9
 TOP_BAR_BAND_TOP = 0.06
 TOP_BAR_BAND_BOTTOM = 0.15
+# Shorter runs of black rows (reference px) are gaps between HUD
+# elements, not the line (Xiaomi: 13 rows; one row under two dialogs)
+TOP_BAR_LINE_MIN_ROWS_Y = 5
 # The null spot is this far (reference px) below the line: still on
 # the restaurant (the top bar catches taps, popups stay open) but
 # above the tables, whose customer bubbles open dialogs (Investor's
@@ -255,20 +258,24 @@ class GameActions:
     of black rows in the top band), else None.
 
     The first run, not the lowest black row: a black row lower in the
-    restaurant (e.g. a night city) must not move the spot down. A run
-    reaching the band bottom is no line (e.g. a black screen).
+    restaurant (e.g. a night city) must not move the spot down. Too
+    short runs are skipped; a run reaching the band bottom is no line
+    (e.g. a black screen).
     """
     height = self._bgr().shape[0]
     top = round(height * TOP_BAR_BAND_TOP)
     bottom = round(height * TOP_BAR_BAND_BOTTOM)
     band = self._bgr()[top:bottom].max(axis=2) < TOP_BAR_LINE_MAX_VALUE
     black_rows = band.mean(axis=1) > TOP_BAR_LINE_MIN_RATIO
-    line_y = None
+    min_rows = round(TOP_BAR_LINE_MIN_ROWS_Y * self.sc.y_scale)
+    run = 0
     for i, black in enumerate(black_rows):
       if black:
-        line_y = top + i
-      elif line_y is not None:
-        return line_y
+        run += 1
+      elif run >= min_rows:
+        return top + i - 1
+      else:
+        run = 0
     return None
 
   def is_having_food_delivery_accept(self):
@@ -836,7 +843,7 @@ class GameActions:
 
   def _close_dimming_dialogs(self):
     """Close dialogs that dim the screen (on a dimmed screen the line
-    is found too low). Returns True when the screen is not dimmed."""
+    comes out wrong). Returns True when the screen is not dimmed."""
     # init_game() may have just tapped a dialog that is fading out
     time.sleep(1)
     self.device.capture_screenshot()
@@ -871,7 +878,8 @@ class GameActions:
       reason, coords['x'], coords['y'])
     key_log.error(
       "ERROR - Top bar not found (%s), null spot at fallback "
-      "(%d, %d); fix place_null_click_below_top_bar()",
+      "(%d, %d), popups may stay open or an ad may start; fix "
+      "place_null_click_below_top_bar()",
       reason, coords['x'], coords['y'])
 
   def start_game_for_first_time(self):

@@ -22,8 +22,8 @@ shows up in the log instead of a silent hang.
 `null_click_coords` is the spot tapped to close station popups. It
 must be on the restaurant (the top bar catches taps there, so the
 popup stays open) but must not hit a customer bubble: on Xiaomi the
-spot at y=340 hit the investor's bubble, its "Investor" dialog opened
-and its blue **Claim** button (~(540, 1548), where the bot taps
+spot at y=340 (301 there) hit the investor's bubble, its "Investor"
+dialog opened and its blue **Claim** button (~(540, 1548), where the bot taps
 stations) started an ad the bot could not leave for hours.
 
 The spot can't be derived from the resolution, the status bar height
@@ -45,7 +45,9 @@ once at start, right after `init_game()`:
    screens have black rows higher up). The line is the **end of the
    first run** of black rows, so a black row lower in the restaurant
    (e.g. a night city) can't move the spot down; a run reaching the
-   band bottom is no line.
+   band bottom is no line. Runs shorter than
+   `TOP_BAR_LINE_MIN_ROWS_Y` (5 reference px) are gaps between HUD
+   elements and are skipped (the Xiaomi line has 13 rows).
 3. **Place the spot** `NULL_CLICK_BELOW_TOP_BAR_Y` (22 reference px)
    below the line: still on the restaurant, above the tables. Xiaomi:
    y=245, OnePlus: y=306. x stays from `coords.py`. Logged as
