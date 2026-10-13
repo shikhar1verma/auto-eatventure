@@ -67,6 +67,7 @@ while True:
     count += 1
     nothing_to_update_count, swipe_count = actions.handle_stale_state(...)
     actions.select_popular_dish()           # when popular_dish_next_try passed
+    actions.collect_adventure_rewards()     # after start, every 5 h
     device.capture_screenshot()
     actions.accept_food_delivery(...)       # truck available -> continue
     actions.invite_helper()                 # helper available -> continue
@@ -90,6 +91,7 @@ while True:
 | `count % 150 == 0` | Close accidental popups | `actions.close_accidental_popups()` |
 | `FOOD_DELIVERY_ENABLED` and truck available | Accept the first Food Delivery order | `actions.accept_food_delivery()` |
 | `HELPER_INVITE_ENABLED` and helper available | Invite the first helper | `actions.invite_helper()` |
+| `COLLECT_ADVENTURES_ENABLED` and `adventures_next_check` passed (first loop, then every 5 h) | Collect the free Adventures rewards | `actions.collect_adventure_rewards()` |
 | `POPULAR_DISH_ENABLED` and `popular_dish_next_try` passed | Select first dish as Popular Dish, Start + Stop at once | `actions.select_popular_dish()` |
 
 ### Popular Dish (Masterchef quest farming, optional)
@@ -161,6 +163,47 @@ helper's Invite. The dialog closes by itself.
   list that doesn't load costs ~15 s); failures close the dialog with
   `close_accidental_popups()`
 - Success is logged only to `autoplay.log`
+
+### Collect Adventures (on by default)
+
+Enabled by default; disable with `COLLECT_ADVENTURES_ENABLED="0"` in
+`.env`. Adventures (Zeus' Feast, Hangry Pirates) give rewards for
+"Complete last level" (repeats the last completed level) while the
+adventure has keys; keys refill about once a day. Checked in the
+first loop after the start, then every `COLLECT_ADVENTURES_INTERVAL_S`
+(5 h); a check that hit an unexpected screen is retried after
+`COLLECT_ADVENTURES_RETRY_S` (1 h). Flow of
+`collect_adventure_rewards()`:
+
+1. Tap the party popper (first white button on the right) and verify
+   the "Events" dialog by its red X.
+2. Swipe the dialog to its bottom: the Events section on top varies,
+   the Adventures are always last.
+3. For each adventure search its key icon in the list (Zeus silver,
+   Pirates brown). An ad icon instead means no free run: the
+   adventure is skipped. The Enter button is tapped at a fixed offset
+   from the found key, so the varying list doesn't matter.
+4. In the level dialog (verified by its red X) tap the right arrow
+   while it is shown, so the last level is selected.
+5. Only while the counter above the buttons shows the key icon: tap
+   "Complete last level". The ad icon (keys used up) is never tapped,
+   it would play an ad for the run.
+6. Reward cards: tap the screen center until the summary shows its
+   red X (one card per tap, 1 to ~10 cards); one more tap closes the
+   summary. Every tap is preceded by a check of the reward screen's
+   background (Zeus dark blue, Pirates brown), so a tap never lands
+   on anything else.
+7. Back to step 4 (a bonus "Key" card adds a run). Then close the
+   level dialog and, at the end, the "Events" dialog with their X.
+
+- Safety limits: 30 arrow taps, 15 reveal taps, 10 runs per adventure
+- Failure (dialog / reward screen not found): a WARNING goes to
+  `autoplay.log` and the open dialogs are closed with
+  `close_accidental_popups()`
+- Collected rewards go to `key_events.log`
+  (`ADVENTURES - Collected rewards: Zeus' Feast 2x, Hangry Pirates 1x`);
+  a check with nothing to collect only to `autoplay.log`
+- Screenshots and measurements: `experiments/adventures/NOTES.md`
 
 ## Stale State Recovery
 

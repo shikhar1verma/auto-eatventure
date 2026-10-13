@@ -90,6 +90,8 @@ All templates are in `matching_screenshots/` and registered in `TemplateMatcher.
 | `food_delivery_accept.png` | `is_having_food_delivery_accept()` (ROI around the first order's Accept) | HSV | 0.9 |
 | `helper_available.png` | `is_having_helper_available()` (ROI around the helper button) | BGR SQDIFF | < 0.015 |
 | `helper_invite.png` | `is_having_helper_invite()` (ROI around the first helper's Invite) | HSV | 0.8 |
+| `adventure_zeus_key.png`, `adventure_pirates_key.png` | `get_adventure_enter_coords()` (key icon of an adventure in the "Events" list) | HSV | 0.8 |
+| `adventure_zeus_dialog_key.png`, `adventure_pirates_dialog_key.png` | `is_having_adventure_key()` (counter of the level dialog; an ad icon there scores <= 0.33) | HSV | 0.8 |
 | `no_boost_indicator_2x.png` | (available) | HSV | 0.92 |
 | `ads_crosses/cross1.png` | (available) | Grayscale | 0.8 |
 
@@ -101,6 +103,9 @@ pixels in an HSV range is measured with `color_ratio()`):
 | Red badge on the upgrade button | `is_having_upgrade()` | red | 0.12 |
 | Red X (close) of the Upgrades dialog | `is_having_upgrades_dialog()` | red | 0.4 |
 | First row's buy button in the Upgrades dialog | `is_first_upgrade_affordable()` | blue (grey = too expensive) | 0.3 |
+| Red X of the "Events" dialog / an adventure's level dialog / the reward summary | `is_having_events_dialog()`, `is_having_adventure_level_dialog()`, `is_having_adventure_summary()` | red | 0.5 |
+| Right arrow of an adventure's level dialog (last level not selected) | `is_having_adventure_right_arrow()` | blue | 0.2 |
+| Background of the adventure reward screen | `is_having_adventure_reward_screen()` | dark blue (Zeus) or brown (Pirates) | 0.8 |
 
 ## Template Scaling
 

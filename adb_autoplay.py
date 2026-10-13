@@ -60,6 +60,17 @@ HELPER_INVITE_ENABLED = os.getenv(
 HELPER_INVITE_PAUSE_S = 60
 HELPER_INVITE_RETRY_S = 10 * 60
 
+# Optional: collect the free Adventures rewards (Zeus' Feast, Hangry
+# Pirates) via "Complete last level". On by default.
+COLLECT_ADVENTURES_ENABLED = os.getenv(
+  "COLLECT_ADVENTURES_ENABLED", "1").strip() == "1"
+
+# Keys refill about once a day, so the first check runs right after
+# the start and the next ones every 5 hours. A check that hit an
+# unexpected screen is retried sooner.
+COLLECT_ADVENTURES_INTERVAL_S = 5 * 60 * 60
+COLLECT_ADVENTURES_RETRY_S = 60 * 60
+
 
 class AutoEatventure:
   """Main bot orchestrator."""
@@ -85,6 +96,14 @@ class AutoEatventure:
              else HELPER_INVITE_RETRY_S)
     return time.monotonic() + delay
 
+  def _collect_adventures(self):
+    """Collect Adventures rewards; return the time of the next
+    check."""
+    delay = (COLLECT_ADVENTURES_INTERVAL_S
+             if self.actions.collect_adventure_rewards()
+             else COLLECT_ADVENTURES_RETRY_S)
+    return time.monotonic() + delay
+
   def start_playing_game(self):
     """Main game loop — runs indefinitely."""
     count = 0
@@ -95,6 +114,7 @@ class AutoEatventure:
     popular_dish_wait_for_upgrade = False
     food_delivery_next_try = 0
     helper_invite_next_try = 0
+    adventures_next_check = 0
 
     while True:
       count += 1
@@ -107,6 +127,10 @@ class AutoEatventure:
           and not popular_dish_wait_for_upgrade
           and time.monotonic() >= popular_dish_next_try):
         popular_dish_next_try = self._select_popular_dish()
+
+      if (COLLECT_ADVENTURES_ENABLED
+          and time.monotonic() >= adventures_next_check):
+        adventures_next_check = self._collect_adventures()
 
       self.device.capture_screenshot()
 
@@ -174,4 +198,6 @@ log.info('Food Delivery: %s',
          'enabled' if FOOD_DELIVERY_ENABLED else 'disabled')
 log.info('Helper invite: %s',
          'enabled' if HELPER_INVITE_ENABLED else 'disabled')
+log.info('Collect Adventures: %s',
+         'enabled' if COLLECT_ADVENTURES_ENABLED else 'disabled')
 bot.start_playing_game()
