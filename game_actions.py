@@ -104,7 +104,7 @@ NULL_CLICK_BELOW_TOP_BAR_Y = 22
 # Adventures: (name, key icon in the "Events" list, key icon in the
 # level dialog). The counter shows a key while free runs are left and
 # an ad icon (never tapped) when the keys are used up. Key templates
-# score 0.95-1.00, the other adventure's key and the ad icon <= 0.55.
+# score 0.93-1.00, the other adventure's key and the ad icon <= 0.46.
 ADVENTURES = [
   ("Zeus' Feast", 'adventure_zeus_key', 'adventure_zeus_dialog_key'),
   ('Hangry Pirates', 'adventure_pirates_key',
@@ -856,18 +856,22 @@ class GameActions:
     runs are used up; it is never tapped. Returns False when a screen
     didn't show up as expected (the dialogs are then closed).
     """
-    collected = []
+    collected = {}
     finished = self._collect_adventures(collected)
     if collected:
-      key_log.info('ADVENTURES - Collected rewards: %s',
-                   ', '.join(collected))
+      key_log.info('ADVENTURES - Collected rewards: %s', ', '.join(
+        f'{name} {runs}x' for name, runs in collected.items()))
     if not finished:
       self._close_adventure_dialogs()
     return finished
 
   def _collect_adventures(self, collected):
-    """Collect all adventures; append "<name> <runs>x" to
-    collected."""
+    """Collect all adventures; count the runs in collected
+    {name: runs}."""
+    self.device.capture_screenshot()
+    if not self.is_having_settings():
+      log.warning('Adventures: main screen not found')
+      return False
     self.device.click(self.loc.events_button_coords)
     time.sleep(ADVENTURE_DIALOG_DELAY_S)
     self.device.capture_screenshot()
@@ -879,46 +883,59 @@ class GameActions:
     time.sleep(ADVENTURE_DIALOG_DELAY_S)
     for name, list_key, dialog_key in ADVENTURES:
       self.device.capture_screenshot()
+      if not self.is_having_events_dialog():
+        log.warning('Adventures: Events dialog not found')
+        return False
       enter_coords = self.get_adventure_enter_coords(list_key)
       if enter_coords is None:
         log.info('Adventures: %s has no free run', name)
         continue
       self.device.click(enter_coords)
       time.sleep(ADVENTURE_DIALOG_DELAY_S)
-      runs = self._complete_adventure_levels(dialog_key)
-      if runs:
-        collected.append(f'{name} {runs}x')
-      if runs is None:
+      if not self._complete_adventure_levels(
+          name, dialog_key, collected):
         return False
-      log.info('Adventures: %s completed %dx', name, runs)
-      self.device.click(self.loc.adventure_level_close_coords)
-      time.sleep(ADVENTURE_DIALOG_DELAY_S)
-    self.device.click(self.loc.events_close_coords)
-    time.sleep(ADVENTURE_DIALOG_DELAY_S)
-    return True
+      log.info('Adventures: %s completed %dx',
+               name, collected.get(name, 0))
+      if not self._close_adventure_dialog(
+          self.is_having_adventure_level_dialog,
+          self.loc.adventure_level_close_coords):
+        return False
+    return self._close_adventure_dialog(
+      self.is_having_events_dialog, self.loc.events_close_coords)
 
-  def _complete_adventure_levels(self, key_template):
+  def _complete_adventure_levels(self, name, key_template, collected):
     """Complete the last level while the counter shows a key.
 
     Bonus key cards add runs, so the count is not known in advance.
-    Returns the number of runs, None on an unexpected screen.
+    Every run is counted in collected. Returns False on an unexpected
+    screen.
     """
-    runs = 0
-    while runs < ADVENTURE_MAX_RUNS:
+    for _ in range(ADVENTURE_MAX_RUNS):
       self.device.capture_screenshot()
       if not self.is_having_adventure_level_dialog():
         log.warning('Adventures: level dialog not found')
-        return None
+        return False
       if not self._select_last_adventure_level():
-        return None
+        return False
       if not self.is_having_adventure_key(key_template):
-        return runs
+        return True
       self.device.click(self.loc.adventure_complete_last_coords)
       time.sleep(ADVENTURE_DIALOG_DELAY_S)
       if not self._reveal_adventure_rewards():
-        return None
-      runs += 1
-    return runs
+        return False
+      collected[name] = collected.get(name, 0) + 1
+    return True
+
+  def _close_adventure_dialog(self, is_open, close_coords):
+    """Tap the dialog's X if the dialog is open."""
+    self.device.capture_screenshot()
+    if not is_open():
+      log.warning('Adventures: dialog to close not found')
+      return False
+    self.device.click(close_coords)
+    time.sleep(ADVENTURE_DIALOG_DELAY_S)
+    return True
 
   def _select_last_adventure_level(self):
     """Tap the right arrow until the last level is selected."""
@@ -965,7 +982,18 @@ class GameActions:
     return False
 
   def _close_adventure_dialogs(self):
-    """Close the dialogs left open by a failed collection."""
+    """Close the screens left open by a failed collection.
+
+    The reward cards have no X: they are tapped through like in a run
+    (each tap after a check of the reward screen), then the level and
+    Events dialogs are closed by their red X.
+    """
+    for _ in range(ADVENTURE_MAX_REVEAL_TAPS + 1):
+      self.device.capture_screenshot()
+      if not self.is_having_adventure_reward_screen():
+        break
+      self.device.click(self.loc.adventure_reveal_tap_coords)
+      time.sleep(ADVENTURE_REVEAL_DELAY_S)
     for _ in range(3):
       self.device.capture_screenshot()
       if not self.close_accidental_popups():

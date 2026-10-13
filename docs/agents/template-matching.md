@@ -91,7 +91,7 @@ All templates are in `matching_screenshots/` and registered in `TemplateMatcher.
 | `helper_available.png` | `is_having_helper_available()` (ROI around the helper button) | BGR SQDIFF | < 0.015 |
 | `helper_invite.png` | `is_having_helper_invite()` (ROI around the first helper's Invite) | HSV | 0.8 |
 | `adventure_zeus_key.png`, `adventure_pirates_key.png` | `get_adventure_enter_coords()` (key icon of an adventure in the "Events" list) | HSV | 0.8 |
-| `adventure_zeus_dialog_key.png`, `adventure_pirates_dialog_key.png` | `is_having_adventure_key()` (counter of the level dialog; an ad icon there scores <= 0.33) | HSV | 0.8 |
+| `adventure_zeus_dialog_key.png`, `adventure_pirates_dialog_key.png` | `is_having_adventure_key()` (counter of the level dialog; the other key / an ad icon there scores <= 0.46) | HSV | 0.8 |
 | `no_boost_indicator_2x.png` | (available) | HSV | 0.92 |
 | `ads_crosses/cross1.png` | (available) | Grayscale | 0.8 |
 

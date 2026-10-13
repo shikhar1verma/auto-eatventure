@@ -197,9 +197,13 @@ first loop after the start, then every `COLLECT_ADVENTURES_INTERVAL_S`
    level dialog and, at the end, the "Events" dialog with their X.
 
 - Safety limits: 30 arrow taps, 15 reveal taps, 10 runs per adventure
+- Every close tap and the popper tap first check that the expected
+  screen is shown (main screen = settings gear visible)
 - Failure (dialog / reward screen not found): a WARNING goes to
-  `autoplay.log` and the open dialogs are closed with
-  `close_accidental_popups()`
+  `autoplay.log`; reward cards still shown are tapped through (each
+  tap after a check of the reward screen), then the open dialogs are
+  closed with `close_accidental_popups()`. Runs collected before the
+  failure still go to `key_events.log`.
 - Collected rewards go to `key_events.log`
   (`ADVENTURES - Collected rewards: Zeus' Feast 2x, Hangry Pirates 1x`);
   a check with nothing to collect only to `autoplay.log`
