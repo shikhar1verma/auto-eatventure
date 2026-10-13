@@ -100,6 +100,14 @@ class TemplateMatcher:
         './matching_screenshots/helper_available.png',
       'helper_invite':
         './matching_screenshots/helper_invite.png',
+      'adventure_zeus_key':
+        './matching_screenshots/adventure_zeus_key.png',
+      'adventure_pirates_key':
+        './matching_screenshots/adventure_pirates_key.png',
+      'adventure_zeus_dialog_key':
+        './matching_screenshots/adventure_zeus_dialog_key.png',
+      'adventure_pirates_dialog_key':
+        './matching_screenshots/adventure_pirates_dialog_key.png',
       'ads_crosses': {
         'cross1':
           './matching_screenshots/ads_crosses/cross1.png',

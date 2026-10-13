@@ -150,6 +150,47 @@ class Constants:
             'y': sc.helper_invite_y
         }
 
+        self.events_button_coords = {
+            'x': sc.events_button_x,
+            'y': sc.events_button_y
+        }
+
+        self.events_close_coords = {
+            'x': sc.events_close_x,
+            'y': sc.events_close_y
+        }
+
+        self.adventure_level_close_coords = {
+            'x': sc.adventure_level_close_x,
+            'y': sc.adventure_level_close_y
+        }
+
+        self.events_scroll_coords = {
+            'start': {
+                'x': sc.events_scroll_start_x,
+                'y': sc.events_scroll_start_y
+            },
+            'end': {
+                'x': sc.events_scroll_end_x,
+                'y': sc.events_scroll_end_y
+            }
+        }
+
+        self.adventure_right_arrow_coords = {
+            'x': sc.adventure_right_arrow_x,
+            'y': sc.adventure_right_arrow_y
+        }
+
+        self.adventure_complete_last_coords = {
+            'x': sc.adventure_complete_last_x,
+            'y': sc.adventure_complete_last_y
+        }
+
+        self.adventure_reveal_tap_coords = {
+            'x': sc.adventure_reveal_tap_x,
+            'y': sc.adventure_reveal_tap_y
+        }
+
         self.swipe_layout_down_coords = {
             'start': {
                 'x': sc.swipe_layout_down_start_x,

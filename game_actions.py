@@ -101,6 +101,43 @@ TOP_BAR_LINE_MIN_ROWS_Y = 5
 # Claim starts an ad)
 NULL_CLICK_BELOW_TOP_BAR_Y = 22
 
+# Adventures: (name, key icon in the "Events" list, key icon in the
+# level dialog). The counter shows a key while free runs are left and
+# an ad icon (never tapped) when the keys are used up. Key templates
+# score 0.93-1.00, the other adventure's key and the ad icon <= 0.46.
+ADVENTURES = [
+  ("Zeus' Feast", 'adventure_zeus_key', 'adventure_zeus_dialog_key'),
+  ('Hangry Pirates', 'adventure_pirates_key',
+   'adventure_pirates_dialog_key'),
+]
+ADVENTURE_KEY_THRESHOLD = 0.8
+# The red X of an open dialog fills ~75% of its area, <= 13% when the
+# dialog is closed or covered; the reward summary's X ~89%, 0% before
+ADVENTURE_CLOSE_RED_MIN_RATIO = 0.5
+# Right arrow of the level dialog ~46% blue, 0% on the last level. The
+# Events dialog has blue Enter buttons there, so it is checked only
+# with the level dialog open.
+ADVENTURE_ARROW_BLUE = [((95, 120, 150), (115, 255, 255))]
+ADVENTURE_ARROW_MIN_RATIO = 0.2
+# Background of the full screen reward cards, dark blue for Zeus'
+# Feast, brown for Hangry Pirates: 100% in its empty area, <= 7% on
+# the restaurant and the dialogs
+ADVENTURE_REWARD_BG = [((95, 200, 110), (105, 255, 150)),
+                       ((16, 130, 140), (26, 185, 195))]
+ADVENTURE_REWARD_BG_MIN_RATIO = 0.8
+# Time for the dialogs and reward screens to open / close
+ADVENTURE_DIALOG_DELAY_S = 1.5
+ADVENTURE_REVEAL_DELAY_S = 1.5
+# The reward screen after "Complete last level" is awaited up to this
+# long
+ADVENTURE_REWARD_TIMEOUT_S = 10
+# Safety limits: arrow taps to the last level, taps to reveal one
+# run's cards (1 to ~10, one more shows the summary) and runs per
+# adventure (bonus key cards add runs)
+ADVENTURE_MAX_ARROW_TAPS = 30
+ADVENTURE_MAX_REVEAL_TAPS = 15
+ADVENTURE_MAX_RUNS = 10
+
 POPULAR_DISH_BUTTON_TEMPLATES = {
   'select': 'popular_dish_select',
   'start': 'popular_dish_start',
@@ -311,6 +348,85 @@ class GameActions:
     roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
     return self.matcher.is_hsv_match(
       roi, 'helper_invite', threshold=0.8)
+
+  def _is_red_close_at(self, x, y, half_width, half_height):
+    """Red X of a dialog / reward summary centered at (x, y)."""
+    roi = self._hsv()[y - half_height:y + half_height,
+                      x - half_width:x + half_width]
+    return self.matcher.color_ratio(
+      roi, UPGRADE_BADGE_RED) >= ADVENTURE_CLOSE_RED_MIN_RATIO
+
+  def is_having_events_dialog(self):
+    """The "Events" dialog (party popper) is open."""
+    return self._is_red_close_at(
+      self.sc.events_close_x, self.sc.events_close_y,
+      self.sc.dialog_close_roi_half_width_x,
+      self.sc.dialog_close_roi_half_height_y)
+
+  def is_having_adventure_level_dialog(self):
+    """Level dialog of an adventure is open on top."""
+    return self._is_red_close_at(
+      self.sc.adventure_level_close_x,
+      self.sc.adventure_level_close_y,
+      self.sc.dialog_close_roi_half_width_x,
+      self.sc.dialog_close_roi_half_height_y)
+
+  def is_having_adventure_reward_screen(self):
+    """Full screen reward cards (revealing or the summary)."""
+    roi = self._hsv()[
+      self.sc.adventure_reward_bg_roi_top_y:
+      self.sc.adventure_reward_bg_roi_bottom_y,
+      self.sc.adventure_reward_bg_roi_left_x:
+      self.sc.adventure_reward_bg_roi_right_x]
+    return self.matcher.color_ratio(
+      roi, ADVENTURE_REWARD_BG) >= ADVENTURE_REWARD_BG_MIN_RATIO
+
+  def is_having_adventure_summary(self):
+    """Summary of the revealed reward cards (all cards revealed)."""
+    return self._is_red_close_at(
+      self.sc.adventure_summary_close_x,
+      self.sc.adventure_summary_close_y,
+      self.sc.adventure_summary_close_roi_half_width_x,
+      self.sc.adventure_summary_close_roi_half_height_y)
+
+  def is_having_adventure_right_arrow(self):
+    """Right arrow of the level dialog: the last level isn't
+    selected."""
+    x = self.sc.adventure_right_arrow_x
+    y = self.sc.adventure_right_arrow_y
+    hw = self.sc.adventure_right_arrow_roi_half_width_x
+    hh = self.sc.adventure_right_arrow_roi_half_height_y
+    roi = self._hsv()[y - hh:y + hh, x - hw:x + hw]
+    return self.matcher.color_ratio(
+      roi, ADVENTURE_ARROW_BLUE) >= ADVENTURE_ARROW_MIN_RATIO
+
+  def get_adventure_enter_coords(self, key_template):
+    """Enter button of the adventure whose key icon is shown in the
+    "Events" list (free runs left), else None."""
+    left = self.sc.events_list_roi_left_x
+    top = self.sc.events_list_roi_top_y
+    roi = self._hsv()[top:self.sc.events_list_roi_bottom_y,
+                      left:self.sc.events_list_roi_right_x]
+    loc = self.matcher.match_hsv(
+      roi, key_template, threshold=ADVENTURE_KEY_THRESHOLD)
+    if loc is None:
+      return None
+    th, tw = self.matcher.templates[key_template]['simple'].shape[:2]
+    return {
+      'x': left + loc[0] + tw // 2 + self.sc.adventure_enter_offset_x,
+      'y': top + loc[1] + th // 2 + self.sc.adventure_enter_offset_y,
+    }
+
+  def is_having_adventure_key(self, key_template):
+    """Key icon on the level dialog's counter (an ad icon there means
+    no free run)."""
+    roi = self._hsv()[
+      self.sc.adventure_counter_roi_top_y:
+      self.sc.adventure_counter_roi_bottom_y,
+      self.sc.adventure_counter_roi_left_x:
+      self.sc.adventure_counter_roi_right_x]
+    return self.matcher.is_hsv_match(
+      roi, key_template, threshold=ADVENTURE_KEY_THRESHOLD)
 
   # ── Game actions ──────────────────────────────────────────
 
@@ -729,6 +845,159 @@ class GameActions:
       if self.is_having_helper_invite():
         return True
     return False
+
+  def collect_adventure_rewards(self):
+    """Collect the free Adventures rewards (Zeus' Feast, Hangry
+    Pirates).
+
+    Opens "Events" (party popper), scrolls to the Adventures at its
+    bottom and, for each adventure with a key icon, completes its last
+    level while the counter shows a key. An ad icon means the free
+    runs are used up; it is never tapped. Returns False when a screen
+    didn't show up as expected (the dialogs are then closed).
+    """
+    collected = {}
+    finished = self._collect_adventures(collected)
+    if collected:
+      key_log.info('ADVENTURES - Collected rewards: %s', ', '.join(
+        f'{name} {runs}x' for name, runs in collected.items()))
+    if not finished:
+      self._close_adventure_dialogs()
+    return finished
+
+  def _collect_adventures(self, collected):
+    """Collect all adventures; count the runs in collected
+    {name: runs}."""
+    self.device.capture_screenshot()
+    if not self.is_having_settings():
+      log.warning('Adventures: main screen not found')
+      return False
+    self.device.click(self.loc.events_button_coords)
+    time.sleep(ADVENTURE_DIALOG_DELAY_S)
+    self.device.capture_screenshot()
+    if not self.is_having_events_dialog():
+      log.warning('Adventures: Events dialog not found')
+      return False
+    scroll = self.loc.events_scroll_coords
+    self.device.swipe(scroll['start'], scroll['end'])
+    time.sleep(ADVENTURE_DIALOG_DELAY_S)
+    for name, list_key, dialog_key in ADVENTURES:
+      self.device.capture_screenshot()
+      if not self.is_having_events_dialog():
+        log.warning('Adventures: Events dialog not found')
+        return False
+      enter_coords = self.get_adventure_enter_coords(list_key)
+      if enter_coords is None:
+        log.info('Adventures: %s has no free run', name)
+        continue
+      self.device.click(enter_coords)
+      time.sleep(ADVENTURE_DIALOG_DELAY_S)
+      if not self._complete_adventure_levels(
+          name, dialog_key, collected):
+        return False
+      log.info('Adventures: %s completed %dx',
+               name, collected.get(name, 0))
+      if not self._close_adventure_dialog(
+          self.is_having_adventure_level_dialog,
+          self.loc.adventure_level_close_coords):
+        return False
+    return self._close_adventure_dialog(
+      self.is_having_events_dialog, self.loc.events_close_coords)
+
+  def _complete_adventure_levels(self, name, key_template, collected):
+    """Complete the last level while the counter shows a key.
+
+    Bonus key cards add runs, so the count is not known in advance.
+    Every run is counted in collected. Returns False on an unexpected
+    screen.
+    """
+    for _ in range(ADVENTURE_MAX_RUNS):
+      self.device.capture_screenshot()
+      if not self.is_having_adventure_level_dialog():
+        log.warning('Adventures: level dialog not found')
+        return False
+      if not self._select_last_adventure_level():
+        return False
+      if not self.is_having_adventure_key(key_template):
+        return True
+      self.device.click(self.loc.adventure_complete_last_coords)
+      time.sleep(ADVENTURE_DIALOG_DELAY_S)
+      if not self._reveal_adventure_rewards():
+        return False
+      collected[name] = collected.get(name, 0) + 1
+    return True
+
+  def _close_adventure_dialog(self, is_open, close_coords):
+    """Tap the dialog's X if the dialog is open."""
+    self.device.capture_screenshot()
+    if not is_open():
+      log.warning('Adventures: dialog to close not found')
+      return False
+    self.device.click(close_coords)
+    time.sleep(ADVENTURE_DIALOG_DELAY_S)
+    return True
+
+  def _select_last_adventure_level(self):
+    """Tap the right arrow until the last level is selected."""
+    for _ in range(ADVENTURE_MAX_ARROW_TAPS):
+      if not self.is_having_adventure_right_arrow():
+        return True
+      self.device.click(self.loc.adventure_right_arrow_coords)
+      time.sleep(ADVENTURE_DIALOG_DELAY_S)
+      self.device.capture_screenshot()
+    log.warning('Adventures: last level not reached')
+    return False
+
+  def _reveal_adventure_rewards(self):
+    """Tap the reward cards until the summary shows, then close it.
+
+    Every tap is preceded by a check of the reward screen, so a tap
+    never lands on anything else (e.g. an ad).
+    """
+    if not self._wait_for_adventure_reward_screen():
+      log.warning('Adventures: reward screen not found')
+      return False
+    for _ in range(ADVENTURE_MAX_REVEAL_TAPS):
+      self.device.capture_screenshot()
+      if not self.is_having_adventure_reward_screen():
+        log.warning('Adventures: reward screen not found')
+        return False
+      summary = self.is_having_adventure_summary()
+      # A tap reveals the next card, on the summary it closes it
+      self.device.click(self.loc.adventure_reveal_tap_coords)
+      time.sleep(ADVENTURE_REVEAL_DELAY_S)
+      if summary:
+        return True
+    log.warning('Adventures: reward summary not found')
+    return False
+
+  def _wait_for_adventure_reward_screen(self):
+    """Wait for the reward screen after "Complete last level"."""
+    deadline = time.monotonic() + ADVENTURE_REWARD_TIMEOUT_S
+    while time.monotonic() < deadline:
+      self.device.capture_screenshot()
+      if self.is_having_adventure_reward_screen():
+        return True
+      time.sleep(1)
+    return False
+
+  def _close_adventure_dialogs(self):
+    """Close the screens left open by a failed collection.
+
+    The reward cards have no X: they are tapped through like in a run
+    (each tap after a check of the reward screen), then the level and
+    Events dialogs are closed by their red X.
+    """
+    for _ in range(ADVENTURE_MAX_REVEAL_TAPS + 1):
+      self.device.capture_screenshot()
+      if not self.is_having_adventure_reward_screen():
+        break
+      self.device.click(self.loc.adventure_reveal_tap_coords)
+      time.sleep(ADVENTURE_REVEAL_DELAY_S)
+    for _ in range(3):
+      self.device.capture_screenshot()
+      if not self.close_accidental_popups():
+        return
 
   def redeem_investor(self):
     """Find and claim investor reward."""

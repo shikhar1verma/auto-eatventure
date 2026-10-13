@@ -67,6 +67,10 @@ FOOD_DELIVERY_ENABLED="0"
 # invited. Default on.
 HELPER_INVITE_ENABLED="1"
 
+# Optional: "0" = don't collect the free Adventures rewards after the
+# start and every 5 hours. Default on.
+COLLECT_ADVENTURES_ENABLED="1"
+
 # Logging: console level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 LOG_LEVEL="INFO"
 

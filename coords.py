@@ -169,6 +169,65 @@ helper_invite_y = 1019
 helper_invite_roi_half_width_x = 147
 helper_invite_roi_half_height_y = 79
 
+# ── Adventures ────────────────────────────────────────────────────────────────
+# Party popper, the first white button in the right column; it opens
+# the "Events" dialog with the Adventures at the bottom
+events_button_x = 1141
+events_button_y = 429
+
+# Red X of the "Events" dialog and of an adventure's level dialog
+# (e.g. "Feast on Olympus"); the red share around it tells which one
+# is open
+events_close_x = 1056
+events_close_y = 797
+adventure_level_close_x = 971
+adventure_level_close_y = 734
+dialog_close_roi_half_width_x = 34
+dialog_close_roi_half_height_y = 34
+
+# Swipe inside the "Events" dialog to its bottom (Adventures are last)
+events_scroll_start_x = 610
+events_scroll_start_y = 1717
+events_scroll_end_x = 610
+events_scroll_end_y = 859
+
+# Search area of the adventures' key icons in the "Events" dialog;
+# the Events section above them varies, so they are searched for
+events_list_roi_left_x = 68
+events_list_roi_right_x = 1152
+events_list_roi_top_y = 791
+events_list_roi_bottom_y = 2181
+# An adventure's Enter button relative to the center of its key icon
+adventure_enter_offset_x = 70
+adventure_enter_offset_y = 118
+
+# Level dialog: right arrow (shown when the last level is not
+# selected), keys counter icon (key or ad) and "Complete last level"
+adventure_right_arrow_x = 898
+adventure_right_arrow_y = 1045
+adventure_right_arrow_roi_half_width_x = 73
+adventure_right_arrow_roi_half_height_y = 96
+adventure_counter_roi_left_x = 474
+adventure_counter_roi_right_x = 723
+adventure_counter_roi_top_y = 1751
+adventure_counter_roi_bottom_y = 1876
+adventure_complete_last_x = 412
+adventure_complete_last_y = 1949
+
+# Full screen reward cards: taps reveal them one by one, then the
+# summary shows a red X in the top right corner. An empty area of the
+# screen's dark blue background tells the reward screen.
+adventure_reward_bg_roi_left_x = 0
+adventure_reward_bg_roi_right_x = 181
+adventure_reward_bg_roi_top_y = 395
+adventure_reward_bg_roi_bottom_y = 621
+adventure_reveal_tap_x = 610
+adventure_reveal_tap_y = 1356
+adventure_summary_close_x = 1118
+adventure_summary_close_y = 186
+adventure_summary_close_roi_half_width_x = 56
+adventure_summary_close_roi_half_height_y = 56
+
 # ── Swipe Coordinates ─────────────────────────────────────────────────────────
 # Distance kept to 650px: the usable playfield height (excluding side
 # buttons/ad banner zones) is only ~820px, so a swipe close to that
