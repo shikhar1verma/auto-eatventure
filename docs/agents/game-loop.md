@@ -15,7 +15,9 @@ known ones and keeps waiting: the "Welcome to <city>" "Okay" button
 (after a flight) and the first stand's "Open" button (after a
 renovation), via the same helpers as the level transition.
 "Restaurant Race ended!" (no X) gets its Claim tapped
-(`claim_race_reward()`, gems, no ad). Any other dialog with a red X is closed by it (`close_accidental_popups()`),
+(`claim_race_reward()`, gems, no ad; only when the Claim button is
+bright, i.e. not covered by another dialog). Any other dialog with a
+red X is closed by it (`close_accidental_popups()`),
 e.g. "While you were away..." (helper invite gems, its Claim buttons
 are never tapped) or Offline Earnings on phones where its template
 doesn't match (its "Collect x2" plays an ad and is never tapped).

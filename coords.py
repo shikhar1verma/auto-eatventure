@@ -230,7 +230,7 @@ adventure_summary_close_roi_half_height_y = 56
 
 # ── Station upgrade icons ─────────────────────────────────────────────────────
 # Height range of the white arrow in the pulsing red upgrade icon
-# (measured 26-41 on Xiaomi, 27-35 on OnePlus Nord 3)
+# (measured on screen 23-39 on Xiaomi, 27-44 on OnePlus Nord 3)
 upgrade_arrow_min_height_y = 22
 upgrade_arrow_max_height_y = 48
 
@@ -263,6 +263,8 @@ swipe_layout_little_down_end_y = 604
 # ── Y-Boundary Thresholds ─────────────────────────────────────────────────────
 
 # Items below this Y are excluded from food icon detection (avoids club icon area)
+# Also keeps taps off the red badge of the bottom Upgrades button,
+# which looks like a station upgrade icon (~2474)
 danger_max_y = 2200
 
 # Food icons below this Y AND within the left side button zone are excluded

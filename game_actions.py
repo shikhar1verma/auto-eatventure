@@ -94,6 +94,9 @@ STALE_POPUP_CLOSE_TRIES = 3
 # score 0.96-1.00, <= 0.57 on all other screens
 RACE_TEMPLATE_THRESHOLD = 0.8
 RACE_CLAIM_DELAY_S = 1.5
+# The templates match a dimmed dialog too; Claim is tapped only when
+# its button is bright (mean V ~240), i.e. no other dialog covers it
+RACE_CLAIM_MIN_BRIGHTNESS = 200
 # The top bar ends with a black line across the screen (Xiaomi y=226,
 # OnePlus Nord 3 y=284; the status bar height differs). Black row =
 # over 90 % of its pixels have every channel below 10. Searched in
@@ -473,13 +476,19 @@ class GameActions:
       return False
     top = title[1] + self.matcher.templates[
       'race_ended_title']['simple'].shape[0]
-    claim = self.matcher.match_hsv(
-      self._hsv()[top:], 'race_claim',
-      threshold=RACE_TEMPLATE_THRESHOLD)
+    th, tw = self.matcher.templates['race_claim']['simple'].shape[:2]
+    below = self._hsv()[top:]
+    claim = None
+    if below.shape[0] >= th:
+      claim = self.matcher.match_hsv(
+        below, 'race_claim', threshold=RACE_TEMPLATE_THRESHOLD)
     if claim is None:
       log.warning('Restaurant Race ended, but its Claim not found')
       return False
-    th, tw = self.matcher.templates['race_claim']['simple'].shape[:2]
+    button = below[claim[1]:claim[1] + th, claim[0]:claim[0] + tw]
+    if button[:, :, 2].mean() < RACE_CLAIM_MIN_BRIGHTNESS:
+      log.info('Restaurant Race ended dialog is covered, not claiming')
+      return False
     coords = [claim[0] + tw // 2, top + claim[1] + th // 2]
     log.info('Restaurant Race ended - claiming the reward at (%d, %d)',
              coords[0], coords[1])
@@ -514,6 +523,8 @@ class GameActions:
       for _ in range(STALE_POPUP_CLOSE_TRIES):
         if not self.close_accidental_popups():
           break
+        # The race dialog may have been under the closed popup
+        self.claim_race_reward()
       self.device.click(self.loc.null_click_coords)
       time.sleep(1)
       nothing_to_update_count = 0

@@ -126,9 +126,11 @@ Race ended!"). Now:
    the upper half, as labels below the icon cover the rest; a dimmed
    red (V ~120) doesn't count, so dimmed icons are not found.
 
-On the 274 saved screenshots of both phones: 444 icons found vs 339
-with the template (130 more real ones, 25 false ones of the template
-dropped, no false positives), ~30 ms per frame vs ~120 ms. Data:
+On the 274 saved screenshots of both phones (after the `danger_max_y`
+and club button filters): 444 icons found vs 339 with the template
+(130 more real ones, 25 false ones of the template dropped), ~30 ms
+per frame vs ~120 ms. The red badge of the bottom Upgrades button
+looks like a station icon too; `danger_max_y` keeps it out. Data:
 `experiments/upgrade_icons/NOTES.md`.
 
 ## Template Scaling
