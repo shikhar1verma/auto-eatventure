@@ -13,9 +13,19 @@ settings icon is visible or the offline earnings dialog is closed.
 If the bot is restarted while a dialog covers the screen, it taps the
 known ones and keeps waiting: the "Welcome to <city>" "Okay" button
 (after a flight) and the first stand's "Open" button (after a
-renovation), via the same helpers as the level transition. Every
-wait logs `Init: waiting for game to be ready`, so an unknown dialog
-shows up in the log instead of a silent hang.
+renovation), via the same helpers as the level transition. Any
+other dialog with a red X is closed by it (`close_accidental_popups()`),
+e.g. "While you were away..." (helper invite gems, its Claim buttons
+are never tapped) or Offline Earnings on phones where its template
+doesn't match (its "Collect x2" plays an ad and is never tapped).
+Every wait logs `Init: waiting for game to be ready`, so an unknown
+dialog shows up in the log instead of a silent hang.
+
+These start dialogs come when the server answers, up to ~30 s after
+the game is ready, and not on every start. So after "game is ready"
+the screen is watched for `START_DIALOGS_WATCH_S` (30 s, a screenshot
+every 2 s): a dialog that dims it is closed like in step 1 of the
+null spot below. Screenshots: `experiments/start_dialogs/NOTES.md`.
 
 ## Null spot (ad protection)
 
@@ -215,8 +225,9 @@ Handled by `GameActions.handle_stale_state()` in `game_actions.py`:
 
 - **`nothing_to_update_count >= 15`** (every 5th after): Swipe pattern to reveal hidden elements
 - **`nothing_to_update_count > 50`** (`STALE_RECOVERY_THRESHOLD`):
-  bring the game to the foreground (`device.start_app()`) and tap the
-  null click spot, then reset `nothing_to_update_count` to 0, so this
+  bring the game to the foreground (`device.start_app()`), close up
+  to `STALE_POPUP_CLOSE_TRIES` (3) dialogs by their red X (a dialog
+  may block the game) and tap the null click spot, then reset `nothing_to_update_count` to 0, so this
   repeats once per ~50 empty loops (~2-3 min), not on every loop. The
   game is **not** restarted: `start_app()` only brings a running game
   to the foreground (a real restart would need `close_app()` first).
