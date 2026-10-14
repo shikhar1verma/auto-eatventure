@@ -227,8 +227,9 @@ Handled by `GameActions.handle_stale_state()` in `game_actions.py`:
 - **`nothing_to_update_count > 50`** (`STALE_RECOVERY_THRESHOLD`):
   bring the game to the foreground (`device.start_app()`), close up
   to `STALE_POPUP_CLOSE_TRIES` (3) dialogs by their red X (a dialog
-  may block the game) and tap the null click spot, then reset `nothing_to_update_count` to 0, so this
-  repeats once per ~50 empty loops (~2-3 min), not on every loop. The
+  may block the game) and tap the null click spot, then reset
+  `nothing_to_update_count` to 0, so this repeats once per ~50 empty
+  loops (~2-3 min), not on every loop. The
   game is **not** restarted: `start_app()` only brings a running game
   to the foreground (a real restart would need `close_app()` first).
 
@@ -322,6 +323,9 @@ For each food icon (max 3 per iteration):
 - Uses `popup_close_cross` template (red X button)
 - Clicks center of detected button
 - Re-captures screenshot after closing
+- Called every 150 loops, in `init_game()` for start dialogs with a
+  red X, in `_close_dimming_dialogs()` and in the stale recovery
+  (`handle_stale_state()`, up to 3 popups)
 
 ## Disabled Features
 
