@@ -90,6 +90,10 @@ START_DIALOGS_WATCH_S = 30
 START_DIALOGS_CHECK_S = 2
 # Red X popups closed at most when the game is stale (stacked dialogs)
 STALE_POPUP_CLOSE_TRIES = 3
+# "Restaurant Race ended!" (no X, only Claim): title / Claim templates
+# score 0.96-1.00, <= 0.57 on all other screens
+RACE_TEMPLATE_THRESHOLD = 0.8
+RACE_CLAIM_DELAY_S = 1.5
 # The top bar ends with a black line across the screen (Xiaomi y=226,
 # OnePlus Nord 3 y=284; the status bar height differs). Black row =
 # over 90 % of its pixels have every channel below 10. Searched in
@@ -454,6 +458,37 @@ class GameActions:
       return True
     return False
 
+  def claim_race_reward(self):
+    """Claim the reward of the "Restaurant Race ended!" dialog.
+
+    The dialog has no X, only Claim (gems, no ad), and blocks the
+    game. Claim is searched only below the dialog's title, so it can't
+    be another dialog's Claim (the Investor's starts an ad). Returns
+    True when Claim was tapped.
+    """
+    title = self.matcher.match_hsv(
+      self._hsv(), 'race_ended_title',
+      threshold=RACE_TEMPLATE_THRESHOLD)
+    if title is None:
+      return False
+    top = title[1] + self.matcher.templates[
+      'race_ended_title']['simple'].shape[0]
+    claim = self.matcher.match_hsv(
+      self._hsv()[top:], 'race_claim',
+      threshold=RACE_TEMPLATE_THRESHOLD)
+    if claim is None:
+      log.warning('Restaurant Race ended, but its Claim not found')
+      return False
+    th, tw = self.matcher.templates['race_claim']['simple'].shape[:2]
+    coords = [claim[0] + tw // 2, top + claim[1] + th // 2]
+    log.info('Restaurant Race ended - claiming the reward at (%d, %d)',
+             coords[0], coords[1])
+    key_log.info('RACE - Restaurant Race reward claimed')
+    self.device.click(coords)
+    time.sleep(RACE_CLAIM_DELAY_S)
+    self.device.capture_screenshot()
+    return True
+
   def handle_stale_state(self, nothing_to_update_count,
                          swipe_count):
     """Handle when no actionable items found for too long.
@@ -473,7 +508,9 @@ class GameActions:
       self.device.start_app()
       time.sleep(1)
       # A dialog may block the game, e.g. one that came late at start
+      # or "Restaurant Race ended!" (no X)
       self.device.capture_screenshot()
+      self.claim_race_reward()
       for _ in range(STALE_POPUP_CLOSE_TRIES):
         if not self.close_accidental_popups():
           break
@@ -562,12 +599,11 @@ class GameActions:
       time.sleep(0.2)
 
   def get_food_icon_locations(self):
-    """Find all food upgrade icons on screen."""
-    screenshot = self._gray()
-    template = \
-      self.matcher.templates['buy_better_food_icon']['grayscale']
-    matched = self.matcher.find_all_templates(
-      screenshot, template, end=False, threshold=0.8)
+    """Find all station upgrade icons on screen (none on a screen
+    dimmed by a dialog)."""
+    matched = self.matcher.find_upgrade_icons(
+      self._hsv(), self.sc.upgrade_arrow_min_height_y,
+      self.sc.upgrade_arrow_max_height_y)
 
     danger_max_y = self.loc.danger_max_y
     return [c for c in matched
@@ -1099,6 +1135,8 @@ class GameActions:
         log.info('Init: tapping first stand "Open" button')
         self._wait_and_click_open_button()
         continue
+      if self.claim_race_reward():
+        continue
       if self.close_accidental_popups():
         continue
       log.info('Init: waiting for game to be ready')
@@ -1155,6 +1193,8 @@ class GameActions:
       elif self.is_having_open_button():
         log.info('Start: tapping first stand "Open" button')
         self._wait_and_click_open_button()
+      elif self.claim_race_reward():
+        pass
       elif not self.close_accidental_popups():
         # A tap outside a modal dialog closes it and doesn't reach the
         # restaurant behind it (Back doesn't close dialogs)

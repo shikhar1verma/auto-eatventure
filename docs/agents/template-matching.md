@@ -76,7 +76,7 @@ All templates are in `matching_screenshots/` and registered in `TemplateMatcher.
 | `welcome_city_okay.png` | `is_having_welcome_city_okay()` ("Welcome to <city>" after fly) | HSV | 0.9 |
 | `settings.png` | `is_having_settings()` | HSV | 0.8 |
 | `offline_earnings.png` | `is_having_offline_earnings()` | HSV | 0.8 |
-| `buy_better_food_icon.png` | `get_food_icon_locations()` | Grayscale multi | 0.8 |
+| `race_ended_title.png`, `race_claim.png` | `claim_race_reward()` ("Restaurant Race ended!"; Claim searched only below the title) | HSV | 0.8 |
 | `buy_better_food_button.png` | (available) | HSV | 0.8 |
 | `box.png`, `box2.png` | `open_boxes()` | BGR multi | 0.7 |
 | `go_next_level_icon.png` | `is_having_next_level_icon()` | HSV | 0.95 |
@@ -106,6 +106,30 @@ pixels in an HSV range is measured with `color_ratio()`):
 | Red X of the "Events" dialog / an adventure's level dialog / the reward summary | `is_having_events_dialog()`, `is_having_adventure_level_dialog()`, `is_having_adventure_summary()` | red | 0.5 |
 | Right arrow of an adventure's level dialog (last level not selected) | `is_having_adventure_right_arrow()` | blue | 0.2 |
 | Background of the adventure reward screen | `is_having_adventure_reward_screen()` | dark blue (Zeus) or brown (Pirates) | 0.8 |
+
+## Station Upgrade Icons (shape + color, no template)
+
+`TemplateMatcher.find_upgrade_icons()`, used by
+`get_food_icon_locations()`. The icon (red circle, white up arrow)
+pulses, so the old grayscale template (`buy_better_food_icon.png`)
+missed it in many frames, and grayscale correlation also found it on a
+screen dimmed by a dialog (the bot kept tapping it under "Restaurant
+Race ended!"). Now:
+
+1. White mask (S <= 70, V >= 225), connected components with an arrow
+   height of `upgrade_arrow_min/max_height_y` (22-48 ref px).
+2. Arrow shape of the bounding box: aspect 0.7-1.3, fill 0.4-0.75,
+   empty top corners (an X has them full), filled stem and center
+   (a letter "o" has an empty center).
+3. Red circle: of 9 points on the upper half circle (radius 0.8 x arrow
+   height) at least 4 are icon red (H 0-3, S 150-210, V >= 235). Only
+   the upper half, as labels below the icon cover the rest; a dimmed
+   red (V ~120) doesn't count, so dimmed icons are not found.
+
+On the 274 saved screenshots of both phones: 444 icons found vs 339
+with the template (130 more real ones, 25 false ones of the template
+dropped, no false positives), ~30 ms per frame vs ~120 ms. Data:
+`experiments/upgrade_icons/NOTES.md`.
 
 ## Template Scaling
 

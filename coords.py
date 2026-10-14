@@ -228,6 +228,12 @@ adventure_summary_close_y = 186
 adventure_summary_close_roi_half_width_x = 56
 adventure_summary_close_roi_half_height_y = 56
 
+# ── Station upgrade icons ─────────────────────────────────────────────────────
+# Height range of the white arrow in the pulsing red upgrade icon
+# (measured 26-41 on Xiaomi, 27-35 on OnePlus Nord 3)
+upgrade_arrow_min_height_y = 22
+upgrade_arrow_max_height_y = 48
+
 # ── Swipe Coordinates ─────────────────────────────────────────────────────────
 # Distance kept to 650px: the usable playfield height (excluding side
 # buttons/ad banner zones) is only ~820px, so a swipe close to that
