@@ -5,6 +5,7 @@ Configures Python's logging module with:
 - Console handler: prints to stdout (default level: INFO)
 - File handler: writes to logs/ directory with daily rotation
 - Key events file: important milestones only (logs/key_events.log)
+- Uncaught exceptions (crashes) go to both log files
 
 Configuration via environment variables:
 - LOG_LEVEL: console log level (default "INFO")
@@ -14,6 +15,7 @@ Configuration via environment variables:
 
 import logging
 import os
+import sys
 from logging.handlers import TimedRotatingFileHandler
 
 LOG_DIR = "logs"
@@ -69,6 +71,25 @@ def setup_logging():
 
   # Key events logger (separate file, no console output)
   _setup_key_events_logger(max_days)
+
+  sys.excepthook = _log_crash
+
+
+def _log_crash(exc_type, exc_value, exc_traceback):
+  """Log an uncaught exception, e.g. when the phone gets
+  disconnected.
+
+  Without this its traceback goes only to the console window. The full
+  traceback goes to autoplay.log, one short line to key_events.log.
+  Ctrl+C is not a crash.
+  """
+  if issubclass(exc_type, KeyboardInterrupt):
+    sys.__excepthook__(exc_type, exc_value, exc_traceback)
+    return
+  logging.getLogger(__name__).error(
+    'Bot crashed', exc_info=(exc_type, exc_value, exc_traceback))
+  logging.getLogger("key_events").error(
+    "ERROR - Bot crashed: %s, see autoplay.log", exc_type.__name__)
 
 
 def _setup_key_events_logger(max_days):
