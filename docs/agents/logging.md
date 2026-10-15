@@ -37,14 +37,18 @@ logger.py              # setup_logging() + get_logger() + get_key_logger()
 | `WARNING` | Recovery actions: stale state (bring game to foreground), missing config, invalid env values |
 | `ERROR` | Failures: template not found, mask empty (used in debug scripts); a crash (uncaught exception) with its traceback |
 
-## Crashes
+## Crashes and End of the Bot
 
 `setup_logging()` sets `sys.excepthook`, so an uncaught exception
 (e.g. an ADB command failing after the phone got disconnected) is
 logged as `Bot crashed` with its traceback to `autoplay.log` (and the
 console) and as one short line to `key_events.log`. Before, the
 traceback went only to the console window and the logs just stopped.
-Ctrl+C (`KeyboardInterrupt`) is not logged as a crash.
+
+The end of the bot is logged too (`Bot stopped (<reason>)` /
+`STOP - Bot stopped (<reason>)`): Ctrl+C (`KeyboardInterrupt`, not a
+crash), a closed console window (SIGHUP, not on Windows) and `kill`
+(SIGTERM). Only `kill -9` (SIGKILL) can't be logged.
 
 ## Usage in Code
 
@@ -106,6 +110,7 @@ A separate file recording only key milestones. Useful for tracking progress (e.g
 | `WARNING` | "Welcome to <city>" dialog's "Okay" button not found after fly (should not normally happen) | `WARNING - Okay button not found` |
 | `ERROR` | Top bar line not found at start, the null spot stays at the fallback from `coords.py`; the search must be fixed for this phone | `ERROR - Top bar not found (<reason>), null spot at fallback (x, y), popups may stay open or an ad may start; fix place_null_click_below_top_bar()` |
 | `ERROR` | The bot crashed (uncaught exception, e.g. the phone got disconnected); the traceback is in `autoplay.log` | `ERROR - Bot crashed: <exception type>, see autoplay.log` |
+| `STOP` | The bot was stopped: Ctrl+C, closed console window (SIGHUP) or `kill` (SIGTERM) | `STOP - Bot stopped (Ctrl+C)` |
 
 ### Usage:
 

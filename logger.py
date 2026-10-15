@@ -5,7 +5,8 @@ Configures Python's logging module with:
 - Console handler: prints to stdout (default level: INFO)
 - File handler: writes to logs/ directory with daily rotation
 - Key events file: important milestones only (logs/key_events.log)
-- Uncaught exceptions (crashes) go to both log files
+- Uncaught exceptions (crashes) and the end of the bot (Ctrl+C, closed
+  window, kill) go to both log files
 
 Configuration via environment variables:
 - LOG_LEVEL: console log level (default "INFO")
@@ -15,6 +16,7 @@ Configuration via environment variables:
 
 import logging
 import os
+import signal
 import sys
 from logging.handlers import TimedRotatingFileHandler
 
@@ -73,6 +75,22 @@ def setup_logging():
   _setup_key_events_logger(max_days)
 
   sys.excepthook = _log_crash
+  # Closed console window (SIGHUP, not on Windows) and kill (SIGTERM)
+  # end the bot without an exception
+  for name in ("SIGTERM", "SIGHUP"):
+    if hasattr(signal, name):
+      signal.signal(getattr(signal, name), _log_stop)
+
+
+def _log_stop(signum, _frame):
+  """Log the end of the bot by a signal, then exit."""
+  _log_end(signal.Signals(signum).name)
+  sys.exit(0)
+
+
+def _log_end(reason):
+  logging.getLogger(__name__).info('Bot stopped (%s)', reason)
+  logging.getLogger("key_events").info("STOP - Bot stopped (%s)", reason)
 
 
 def _log_crash(exc_type, exc_value, exc_traceback):
@@ -81,10 +99,10 @@ def _log_crash(exc_type, exc_value, exc_traceback):
 
   Without this its traceback goes only to the console window. The full
   traceback goes to autoplay.log, one short line to key_events.log.
-  Ctrl+C is not a crash.
+  Ctrl+C is logged as the end of the bot, not as a crash.
   """
   if issubclass(exc_type, KeyboardInterrupt):
-    sys.__excepthook__(exc_type, exc_value, exc_traceback)
+    _log_end('Ctrl+C')
     return
   logging.getLogger(__name__).error(
     'Bot crashed', exc_info=(exc_type, exc_value, exc_traceback))
