@@ -105,6 +105,7 @@ A separate file recording only key milestones. Useful for tracking progress (e.g
 | `FLY` | Flying to a new city/restaurant | `FLY - Flying to next city` |
 | `STALE` | Nothing to update for more than 50 loops, game brought to the foreground (not restarted; at most once per ~2-3 min) | `STALE - Nothing to update, bringing game to foreground` |
 | `POPULAR DISH` | Popular Dish selected and stopped (optional) | `POPULAR DISH - Selected first dish` |
+| `RACE` | "Restaurant Race ended!" reward claimed | `RACE - Restaurant Race reward claimed` |
 | `ADVENTURES` | Free Adventures rewards collected (only when something was collected) | `ADVENTURES - Collected rewards: Zeus' Feast 2x, Hangry Pirates 1x` |
 | `WARNING` | First stand's "Open" button not found after renovate / fly (should not normally happen) | `WARNING - Open button not found` |
 | `WARNING` | "Welcome to <city>" dialog's "Okay" button not found after fly (should not normally happen) | `WARNING - Okay button not found` |
