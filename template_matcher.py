@@ -15,6 +15,30 @@ from logger import get_logger
 
 log = get_logger(__name__)
 
+# Station upgrade icon: red circle (HSV (1, 179, 255)) with a white up
+# arrow. The arrow is found as a white shape, then the red circle
+# around it is checked. Under a dialog the red is dark (V ~120), so
+# icons on a dimmed screen are not found. "Double"/"Instant" labels
+# tint the arrow pink, hence the loose white.
+UPGRADE_ARROW_WHITE = ((0, 0, 225), (180, 70, 255))
+UPGRADE_CIRCLE_RED = ((0, 150, 235), (3, 210, 255))
+# Arrow shape (bounding box): aspect, filled share, empty top corners
+# (an X has them full), filled bottom middle (the stem) and center
+# (a letter "o" has it empty)
+UPGRADE_ARROW_ASPECT = (0.7, 1.3)
+UPGRADE_ARROW_FILL = (0.4, 0.75)
+UPGRADE_ARROW_MAX_TOP_CORNERS = 0.3
+UPGRADE_ARROW_MIN_STEM = 0.3
+UPGRADE_ARROW_MIN_CENTER = 0.5
+# The circle is sampled on its upper half (labels below the icon and
+# the side panel cover parts of it), at this multiple of the arrow
+# height from the arrow's center; at least this many of the 9 points
+# must be icon red
+UPGRADE_CIRCLE_RADIUS = 0.8
+UPGRADE_CIRCLE_MIN_HITS = 4
+UPGRADE_CIRCLE_POINTS = [
+  (np.cos(a), -np.sin(a)) for a in np.linspace(0, np.pi, 9)]
+
 
 class TemplateMatcher:
   """Loads and matches templates against screenshots."""
@@ -54,20 +78,24 @@ class TemplateMatcher:
         './matching_screenshots/notification.png',
       'first_lemondae_stand_open':
         './matching_screenshots/first_lemonade_stand_open.png',
+      'open_button':
+        './matching_screenshots/open_button.png',
+      'welcome_city_okay':
+        './matching_screenshots/welcome_city_okay.png',
       'settings':
         './matching_screenshots/settings.png',
       'offline_earnings':
         './matching_screenshots/offline_earnings.png',
-      'upgrade_button':
-        './matching_screenshots/upgrade_button.png',
       'single_upgrade':
         './matching_screenshots/single_upgrade.png',
       'box':
         './matching_screenshots/box.png',
       'box2':
         './matching_screenshots/box2.png',
-      'buy_better_food_icon':
-        './matching_screenshots/buy_better_food_icon.png',
+      'race_ended_title':
+        './matching_screenshots/race_ended_title.png',
+      'race_claim':
+        './matching_screenshots/race_claim.png',
       'buy_better_food_button':
         './matching_screenshots/buy_better_food_button.png',
       'go_next_level':
@@ -84,6 +112,28 @@ class TemplateMatcher:
         './matching_screenshots/chest_icon.png',
       'popup_close_cross':
         './matching_screenshots/popup_close_cross.png',
+      'popular_dish_select':
+        './matching_screenshots/popular_dish_select.png',
+      'popular_dish_start':
+        './matching_screenshots/popular_dish_start.png',
+      'popular_dish_stop':
+        './matching_screenshots/popular_dish_stop.png',
+      'food_delivery_available':
+        './matching_screenshots/food_delivery_available.png',
+      'food_delivery_accept':
+        './matching_screenshots/food_delivery_accept.png',
+      'helper_available':
+        './matching_screenshots/helper_available.png',
+      'helper_invite':
+        './matching_screenshots/helper_invite.png',
+      'adventure_zeus_key':
+        './matching_screenshots/adventure_zeus_key.png',
+      'adventure_pirates_key':
+        './matching_screenshots/adventure_pirates_key.png',
+      'adventure_zeus_dialog_key':
+        './matching_screenshots/adventure_zeus_dialog_key.png',
+      'adventure_pirates_dialog_key':
+        './matching_screenshots/adventure_pirates_dialog_key.png',
       'ads_crosses': {
         'cross1':
           './matching_screenshots/ads_crosses/cross1.png',
@@ -204,6 +254,24 @@ class TemplateMatcher:
     return self.find_template(
       screenshot_gray, template, threshold)
 
+  def match_bgr_sqdiff(self, screenshot_bgr, template_key,
+                       max_diff=0.02):
+    """Match raw BGR by squared difference. Returns (x,y) or None.
+
+    Unlike TM_CCOEFF_NORMED it is sensitive to brightness, so it
+    can tell a black icon from the same icon greyed out.
+    Lower diff = better match (0 = identical).
+    """
+    template = self.templates[template_key]['simple']
+    result = cv2.matchTemplate(
+      screenshot_bgr, template, cv2.TM_SQDIFF_NORMED)
+    min_val, _, min_loc, _ = cv2.minMaxLoc(result)
+    if self.debug:
+      log.debug("sqdiff %s: %.4f", template_key, min_val)
+    if min_val < max_diff:
+      return min_loc
+    return None
+
   def is_hsv_match(self, screenshot_hsv, template_key,
                    threshold=0.8):
     """Check if template matches in HSV. Returns bool."""
@@ -215,6 +283,65 @@ class TemplateMatcher:
     """Check if template matches in grayscale. Returns bool."""
     return self.match_grayscale(
       screenshot_gray, template_key, threshold) is not None
+
+  # ── Station upgrade icons ─────────────────────────────────
+
+  def find_upgrade_icons(self, image_hsv, min_height, max_height):
+    """Find station upgrade icons (red circle, white up arrow).
+
+    The arrow height range is in screen pixels (the icons pulse).
+    Returns a list of [x, y] arrow centers.
+    """
+    white = cv2.inRange(image_hsv, *map(np.array, UPGRADE_ARROW_WHITE))
+    red = cv2.inRange(image_hsv, *map(np.array, UPGRADE_CIRCLE_RED))
+    count, labels, stats, _ = cv2.connectedComponentsWithStats(
+      white, connectivity=4)
+    icons = []
+    for i in range(1, count):
+      x, y, w, h, area = stats[i]
+      if not min_height <= h <= max_height:
+        continue
+      if not self._is_upgrade_arrow(
+          labels[y:y + h, x:x + w] == i, area):
+        continue
+      cx = x + w // 2
+      cy = y + h // 2
+      if self._is_upgrade_circle(red, cx, cy, h):
+        icons.append([int(cx), int(cy)])
+    return icons
+
+  @staticmethod
+  def _is_upgrade_arrow(shape, area):
+    """Check the shape (bool mask of its bounding box) of a white
+    component."""
+    h, w = shape.shape
+    if not UPGRADE_ARROW_ASPECT[0] <= w / h <= UPGRADE_ARROW_ASPECT[1]:
+      return False
+    if not UPGRADE_ARROW_FILL[0] <= area / (w * h) \
+        <= UPGRADE_ARROW_FILL[1]:
+      return False
+    band = max(1, h // 5)
+    third = max(1, w // 3)
+    top_corners = np.concatenate(
+      [shape[:band, :third], shape[:band, w - third:]], axis=1)
+    stem = shape[h - band:, third:w - third]
+    center = shape[h // 2 - 1:h // 2 + 2, w // 2 - 1:w // 2 + 2]
+    return (top_corners.mean() <= UPGRADE_ARROW_MAX_TOP_CORNERS
+            and stem.mean() >= UPGRADE_ARROW_MIN_STEM
+            and center.mean() >= UPGRADE_ARROW_MIN_CENTER)
+
+  @staticmethod
+  def _is_upgrade_circle(red, cx, cy, arrow_height):
+    """Check the red circle around an arrow centered at (cx, cy)."""
+    height, width = red.shape
+    radius = UPGRADE_CIRCLE_RADIUS * arrow_height
+    hits = 0
+    for dx, dy in UPGRADE_CIRCLE_POINTS:
+      px = int(cx + dx * radius)
+      py = int(cy + dy * radius)
+      if 0 <= px < width and 0 <= py < height and red[py, px]:
+        hits += 1
+    return hits >= UPGRADE_CIRCLE_MIN_HITS
 
   # ── Color masking ─────────────────────────────────────────
 
@@ -248,6 +375,14 @@ class TemplateMatcher:
       mask = cv2.inRange(hsv_image, lower, upper)
       combined_mask = cv2.bitwise_or(combined_mask, mask)
     return cv2.bitwise_and(image, image, mask=combined_mask)
+
+  def color_ratio(self, image_hsv, ranges):
+    """Fraction of pixels inside any of the (lower, upper) HSV
+    ranges."""
+    mask = np.zeros(image_hsv.shape[:2], np.uint8)
+    for lower, upper in ranges:
+      mask |= cv2.inRange(image_hsv, np.array(lower), np.array(upper))
+    return np.count_nonzero(mask) / mask.size
 
   # ── Pixel color check ────────────────────────────────────
 

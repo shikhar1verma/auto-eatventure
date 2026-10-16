@@ -55,6 +55,22 @@ DEBUG_TEMPLATE_MATCHING="0"
 # Optional: override auto-computed template scale factor
 TEMPLATE_SCALE_OVERRIDE=""
 
+# Optional: "1" = select Popular Dish and stop it right away, only to
+# complete the Masterchef "select a popular dish" quest. Default off.
+POPULAR_DISH_ENABLED="0"
+
+# Optional: "1" = accept the first Food Delivery order whenever one is
+# available (mainly for the Food Delivery quest). Default off.
+FOOD_DELIVERY_ENABLED="0"
+
+# Optional: "0" = don't invite the first helper whenever one can be
+# invited. Default on.
+HELPER_INVITE_ENABLED="1"
+
+# Optional: "0" = don't collect the free Adventures rewards after the
+# start and every 5 hours. Default on.
+COLLECT_ADVENTURES_ENABLED="1"
+
 # Logging: console level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 LOG_LEVEL="INFO"
 

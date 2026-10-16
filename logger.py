@@ -5,6 +5,8 @@ Configures Python's logging module with:
 - Console handler: prints to stdout (default level: INFO)
 - File handler: writes to logs/ directory with daily rotation
 - Key events file: important milestones only (logs/key_events.log)
+- Uncaught exceptions (crashes) and the end of the bot (Ctrl+C, closed
+  window, kill) go to both log files
 
 Configuration via environment variables:
 - LOG_LEVEL: console log level (default "INFO")
@@ -14,6 +16,8 @@ Configuration via environment variables:
 
 import logging
 import os
+import signal
+import sys
 from logging.handlers import TimedRotatingFileHandler
 
 LOG_DIR = "logs"
@@ -70,6 +74,41 @@ def setup_logging():
   # Key events logger (separate file, no console output)
   _setup_key_events_logger(max_days)
 
+  sys.excepthook = _log_crash
+  # Closed console window (SIGHUP, not on Windows) and kill (SIGTERM)
+  # end the bot without an exception
+  for name in ("SIGTERM", "SIGHUP"):
+    if hasattr(signal, name):
+      signal.signal(getattr(signal, name), _log_stop)
+
+
+def _log_stop(signum, _frame):
+  """Log the end of the bot by a signal, then exit."""
+  _log_end(signal.Signals(signum).name)
+  sys.exit(0)
+
+
+def _log_end(reason):
+  logging.getLogger(__name__).info('Bot stopped (%s)', reason)
+  logging.getLogger("key_events").info("STOP - Bot stopped (%s)", reason)
+
+
+def _log_crash(exc_type, exc_value, exc_traceback):
+  """Log an uncaught exception, e.g. when the phone gets
+  disconnected.
+
+  Without this its traceback goes only to the console window. The full
+  traceback goes to autoplay.log, one short line to key_events.log.
+  Ctrl+C is logged as the end of the bot, not as a crash.
+  """
+  if issubclass(exc_type, KeyboardInterrupt):
+    _log_end('Ctrl+C')
+    return
+  logging.getLogger(__name__).error(
+    'Bot crashed', exc_info=(exc_type, exc_value, exc_traceback))
+  logging.getLogger("key_events").error(
+    "ERROR - Bot crashed: %s, see autoplay.log", exc_type.__name__)
+
 
 def _setup_key_events_logger(max_days):
   """Configure the dedicated key events logger."""
@@ -106,7 +145,7 @@ def get_key_logger():
   """Get the key events logger.
 
   Writes only to logs/key_events.log (no console output).
-  Use for key milestones: level transitions, restarts, etc.
+  Use for key milestones: level transitions, stale state, etc.
 
   Usage:
     from logger import get_key_logger

@@ -34,8 +34,21 @@ logger.py              # setup_logging() + get_logger() + get_key_logger()
 |-------|-------|
 | `DEBUG` | Internal details: raw template match scores, pixel checks |
 | `INFO` | All game actions: upgrading station, opening boxes, food upgrades, chests, level transitions, ads, layout adjustments, stale swipes |
-| `WARNING` | Recovery actions: stale state restart, missing config, invalid env values |
-| `ERROR` | Failures: template not found, mask empty (used in debug scripts) |
+| `WARNING` | Recovery actions: stale state (bring game to foreground), missing config, invalid env values |
+| `ERROR` | Failures: template not found, mask empty (used in debug scripts); a crash (uncaught exception) with its traceback |
+
+## Crashes and End of the Bot
+
+`setup_logging()` sets `sys.excepthook`, so an uncaught exception
+(e.g. an ADB command failing after the phone got disconnected) is
+logged as `Bot crashed` with its traceback to `autoplay.log` (and the
+console) and as one short line to `key_events.log`. Before, the
+traceback went only to the console window and the logs just stopped.
+
+The end of the bot is logged too (`Bot stopped (<reason>)` /
+`STOP - Bot stopped (<reason>)`): Ctrl+C (`KeyboardInterrupt`, not a
+crash), a closed console window (SIGHUP, not on Windows) and `kill`
+(SIGTERM). Only `kill -9` (SIGKILL) can't be logged.
 
 ## Usage in Code
 
@@ -46,7 +59,7 @@ log = get_logger(__name__)
 
 log.debug('Upgrading items')
 log.info('Chest found — opening.')
-log.warning('Nothing to update — restarting app.')
+log.warning('Nothing to update — bringing game to foreground.')
 ```
 
 ## Initialization
@@ -61,7 +74,10 @@ from logger import setup_logging
 setup_logging()
 ```
 
-This is done in `adb_autoplay.py` (the entry point).
+This is done in `adb_autoplay.py` (the entry point). Its first log
+line is `START - Bot started`, so every bot start is easy to find
+in `autoplay.log` (the key events log gets its own `START` entry
+once the game is initialized).
 
 ## File Output
 
@@ -87,7 +103,15 @@ A separate file recording only key milestones. Useful for tracking progress (e.g
 | `START` | Bot process begins | `START - Bot started` |
 | `NEXT LEVEL` | Renovated to next level (same city) | `NEXT LEVEL - Renovated to next level` |
 | `FLY` | Flying to a new city/restaurant | `FLY - Flying to next city` |
-| `RESTART` | Stale state triggers app restart | `RESTART - Stale state, restarting app` |
+| `STALE` | Nothing to update for more than 50 loops, game brought to the foreground (not restarted; at most once per ~2-3 min) | `STALE - Nothing to update, bringing game to foreground` |
+| `POPULAR DISH` | Popular Dish selected and stopped (optional) | `POPULAR DISH - Selected first dish` |
+| `RACE` | "Restaurant Race ended!" reward claimed | `RACE - Restaurant Race reward claimed` |
+| `ADVENTURES` | Free Adventures rewards collected (only when something was collected) | `ADVENTURES - Collected rewards: Zeus' Feast 2x, Hangry Pirates 1x` |
+| `WARNING` | First stand's "Open" button not found after renovate / fly (should not normally happen) | `WARNING - Open button not found` |
+| `WARNING` | "Welcome to <city>" dialog's "Okay" button not found after fly (should not normally happen) | `WARNING - Okay button not found` |
+| `ERROR` | Top bar line not found at start, the null spot stays at the fallback from `coords.py`; the search must be fixed for this phone | `ERROR - Top bar not found (<reason>), null spot at fallback (x, y), popups may stay open or an ad may start; fix place_null_click_below_top_bar()` |
+| `ERROR` | The bot crashed (uncaught exception, e.g. the phone got disconnected); the traceback is in `autoplay.log` | `ERROR - Bot crashed: <exception type>, see autoplay.log` |
+| `STOP` | The bot was stopped: Ctrl+C, closed console window (SIGHUP) or `kill` (SIGTERM) | `STOP - Bot stopped (Ctrl+C)` |
 
 ### Usage:
 
@@ -106,7 +130,7 @@ key_log.info("FLY - Flying to next city")
 2024-01-15 08:12:01,456  NEXT LEVEL - Renovated to next level
 2024-01-15 08:19:33,789  FLY - Flying to next city
 2024-01-15 08:25:11,012  NEXT LEVEL - Renovated to next level
-2024-01-15 09:01:55,234  RESTART - Stale state, restarting app
+2024-01-15 09:01:55,234  STALE - Nothing to update, bringing game to foreground
 ```
 
 ## Console Output Format

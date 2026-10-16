@@ -210,6 +210,16 @@ Command: `sudo apt-get install android-sdk-platform-tools`
 
     There is one more script autoplay.py that is a failed attempt as I was trying to directly run the game through UI elements.
 
+## Optional Features
+
+Optional features are switched on / off in `.env` (see `.env-sample`). Only the helper invite is on by default.
+
+| Setting | What it does |
+|---------|--------------|
+| `HELPER_INVITE_ENABLED="0"` | Turns **off** inviting helpers (on by default): whenever the helper (person) button (top-left) is available, opens "Invite a helper" and invites the first helper. The helper works for ~4 min (the ad offered to extend it is never watched), then a ~30 min cooldown follows. |
+| `POPULAR_DISH_ENABLED="1"` | Selects the **Popular Dish** active skill (first dish), starts it and immediately stops it again. The skill effect is not used at all; it is only useful to complete the **Masterchef quest** for selecting a popular dish. Repeats after every renovation / new city (once the first stand is open) and every ~10 min (skill cooldown). |
+| `FOOD_DELIVERY_ENABLED="1"` | Accepts **Food Delivery** orders: whenever the delivery truck button (top-left) is available, opens it and accepts the first order. The delivery completes by itself, then a ~3 min cooldown follows. Useful mainly to complete the Food Delivery quest. |
+
 
 ## Documentation
 

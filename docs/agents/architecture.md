@@ -60,8 +60,8 @@ adb_autoplay.py (AutoEatventure - orchestrator)
 State is purely **in-memory variables** in the game loop:
 
 - `count` -- iteration counter driving periodic actions
-- `nothing_to_update_count` -- consecutive frames with no food icons found
-- `new_level_started` / `new_level_first_food_icon_swipe` -- post-level-transition flags
+- `nothing_to_update_count` -- consecutive frames with no food icons found (reset after stale recovery)
+- `new_level_first_food_icon_swipe` -- post-level-transition flag
 - `swipe_count` -- cycles through swipe pattern array
 
 There is **no persistent state**, no database, no save files. The bot is purely reactive.

@@ -116,6 +116,81 @@ class Constants:
             'y': sc.close_chest_button_y
         }
 
+        self.skills_circle_coords = {
+            'x': sc.skills_circle_x,
+            'y': sc.skills_circle_y
+        }
+
+        self.popular_dish_button_coords = {
+            'x': sc.popular_dish_button_x,
+            'y': sc.popular_dish_button_y
+        }
+
+        # Tapping a gap or a grey (unavailable) tile does nothing,
+        # so the candidates are tried in order until one selects
+        self.first_dish_coords_candidates = [
+            {'x': x, 'y': sc.first_dish_y}
+            for x in (sc.first_dish_3_tiles_x,
+                      sc.first_dish_2_tiles_x,
+                      sc.first_dish_1_tile_x)
+        ]
+
+        self.food_delivery_accept_coords = {
+            'x': sc.food_delivery_accept_x,
+            'y': sc.food_delivery_accept_y
+        }
+
+        self.helper_button_coords = {
+            'x': sc.side_button_tap_x,
+            'y': sc.helper_button_y
+        }
+
+        self.helper_invite_coords = {
+            'x': sc.helper_invite_x,
+            'y': sc.helper_invite_y
+        }
+
+        self.events_button_coords = {
+            'x': sc.events_button_x,
+            'y': sc.events_button_y
+        }
+
+        self.events_close_coords = {
+            'x': sc.events_close_x,
+            'y': sc.events_close_y
+        }
+
+        self.adventure_level_close_coords = {
+            'x': sc.adventure_level_close_x,
+            'y': sc.adventure_level_close_y
+        }
+
+        self.events_scroll_coords = {
+            'start': {
+                'x': sc.events_scroll_start_x,
+                'y': sc.events_scroll_start_y
+            },
+            'end': {
+                'x': sc.events_scroll_end_x,
+                'y': sc.events_scroll_end_y
+            }
+        }
+
+        self.adventure_right_arrow_coords = {
+            'x': sc.adventure_right_arrow_x,
+            'y': sc.adventure_right_arrow_y
+        }
+
+        self.adventure_complete_last_coords = {
+            'x': sc.adventure_complete_last_x,
+            'y': sc.adventure_complete_last_y
+        }
+
+        self.adventure_reveal_tap_coords = {
+            'x': sc.adventure_reveal_tap_x,
+            'y': sc.adventure_reveal_tap_y
+        }
+
         self.swipe_layout_down_coords = {
             'start': {
                 'x': sc.swipe_layout_down_start_x,
