@@ -1,8 +1,9 @@
 # Start dialogs (OnePlus Nord 3, Jenik's phone)
 
 Device KZXCZ9HA79WKJR55, 1240x2772. 2026-10-14 the bot hung in
-`init_game()` ("Init: waiting for game to be ready" forever): two
-dialogs covered (dimmed) the settings gear.
+`init_game()` (now `start_dialogs.wait_until_ready()`) ("Init:
+waiting for game to be ready" forever): two dialogs covered (dimmed)
+the settings gear.
 
 - `sd_01_oneplus_stuck.png` - "While you were away..." (gems from
   players who invited you: "<name> invited you", 1 gem, Claim buttons,

@@ -1,6 +1,6 @@
 # Popular Dish (Active Skills) – notes for automation
 
-Captured 2026-10-08 on device 1080x2400 (reference in coords.py is
+Captured 2026-10-08 on device 1080x2400 (reference in coords/reference.py is
 1220x2712, so convert: ref = device * 1220/1080 ≈ * 1.1296).
 All coordinates below are DEVICE pixels (1080x2400).
 

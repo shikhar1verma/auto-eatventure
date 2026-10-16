@@ -1,6 +1,6 @@
 # Food Delivery – notes for automation
 
-Captured 2026-10-11 on device 1080x2400 (reference in coords.py is
+Captured 2026-10-11 on device 1080x2400 (reference in coords/reference.py is
 1220x2712, so convert: ref = device * 1220/1080 ≈ * 1.1296).
 All coordinates below are DEVICE pixels (1080x2400).
 
@@ -69,8 +69,8 @@ the dialog and tries again after the 60 s pause.
 ## Implementation (branch foodDelivery)
 
 - `FOOD_DELIVERY_ENABLED="1"` in `.env`, off by default.
-- Every loop screenshot: `get_food_delivery_truck_coords()`
-  (SQDIFF, ~15 ms) -> `accept_food_delivery()`: tap truck, verify the
+- Every loop screenshot: `food_delivery.find_truck()`
+  (SQDIFF, ~15 ms) -> `food_delivery.accept()`: tap truck, verify the
   first order's Accept button (HSV template, ROI), tap Accept, verify
   the dialog closed. After any attempt the checks pause for 60 s
   (code review: a falsely confirmed accept must not loop). Success logged to autoplay.log only (user: key_events.log

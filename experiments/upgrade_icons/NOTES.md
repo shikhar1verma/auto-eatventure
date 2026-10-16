@@ -1,7 +1,8 @@
 # Station upgrade icon detection (red circle + white up arrow)
 
-2026-10-14. Problem: `get_food_icon_locations()` (grayscale template
-`buy_better_food_icon.png`, threshold 0.8, DBSCAN) misses icons while
+2026-10-14. Problem: the old `get_food_icon_locations()` (grayscale
+template `buy_better_food_icon.png`, threshold 0.8, DBSCAN; now
+`stations.find_icons()` with the detector below) misses icons while
 they pulse (size changes) and finds them on a screen dimmed by a
 dialog (grayscale correlation ignores brightness) - with the "Restaurant
 Race ended!" dialog the bot kept tapping a dimmed icon, so the stale
@@ -14,7 +15,7 @@ ran, ~0.5-1 s apart).
 Icon colors: red disk BGR (76, 84, 255) = HSV (1, 179, 255), arrow
 pure white. Under a dialog the red has V ~116-142.
 
-## Detection (`TemplateMatcher.find_upgrade_icons()`)
+## Detection (`find_upgrade_icons()` in `vision/upgrade_icons.py`)
 
 1. White mask (S <= 70, V >= 225; the pink glow of "Double" labels
    tints the arrow), connected components.

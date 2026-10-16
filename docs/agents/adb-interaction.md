@@ -4,80 +4,76 @@
 
 ## Overview
 
-All device interaction happens through **Android Debug Bridge (ADB)** via the `adbutils` Python library. The `Device` class in `device.py` encapsulates all ADB communication.
+All device interaction happens through **Android Debug Bridge (ADB)** via the `adbutils` Python library. The `Device` class in `android/device.py` encapsulates all ADB communication. Actions use it as `game.device`.
 
 ## Device Connection
 
-`Device.__init__()` at `device.py`:
+`Device.__init__(serial)` in `android/device.py`, called from `bot/main.py` with `config.DEVICE_SERIAL`:
 
 ```python
-serial = os.getenv("device_serial", "").strip()
 if serial:
-    self.device = adb.device(serial=serial)
+  self._adb = adb.device(serial=serial)
 else:
-    self.device = adb.device_list()[0]  # first connected
+  self._adb = adb.device_list()[0]  # first connected, with a warning
 ```
 
 - Set `device_serial` in `.env` to target a specific device/emulator
 - Leave empty to auto-select the first connected device
+- No device connected raises `RuntimeError`
+
+`Device.screen_size()` returns `(width, height)` parsed from `wm size`.
 
 ## Input Commands
 
-All methods are on the `Device` class in `device.py`:
+All methods are on the `Device` class in `android/device.py`. Positions are `Point` / `Swipe` from `coords/geometry.py`.
 
 ### Tap
 
 ```python
-def click(self, coords):
-    # Accepts dict {x, y} or list [x, y]
-    self.device.shell(f"input tap {x} {y}")
+def tap(self, point):
+  self._adb.shell(f'input tap {point.x} {point.y}')
 ```
 
 ### Long Press
 
 ```python
-def click_and_hold(self, x, y, hold_duration=1000):
-    self.device.shell(f'input swipe {x} {y} {x} {y} {hold_duration}')
+def long_press(self, point, duration_ms):
+  self._adb.shell(f'input swipe {point.x} {point.y} '
+                  f'{point.x} {point.y} {duration_ms}')
 ```
 
 ### Swipe
 
 ```python
-def swipe(self, start, end):
-    self.device.swipe(start['x'], start['y'], end['x'], end['y'])
-```
-
-### Text Input
-
-```python
-def input_text(self, text):
-    escaped_text = text.replace(" ", "%s").replace("&", "\\&")...
-    self.device.shell(f"input text '{escaped_text}'")
+def swipe(self, swipe):
+  self._adb.swipe(swipe.start.x, swipe.start.y,
+                  swipe.end.x, swipe.end.y)
 ```
 
 ## Screenshot Capture
 
-`Device.capture_screenshot()` at `device.py`:
+`Device.screenshot()` in `android/device.py` returns the screen as a BGR numpy array:
 
 - **Windows**: `adb shell screencap -p` with `\r\n` -> `\n` fix
 - **Linux/macOS**: `adb exec-out screencap -p` (raw binary)
 
-After capture, stores three representations on the instance:
-- `current_cv2_sc` -- BGR numpy array
-- `current_cv2_sc_grayscale` -- grayscale numpy array
-- `current_cv2_sc_bgr2hsv` -- HSV numpy array
+`Screen.capture()` (`vision/screen.py`) calls it and keeps three representations:
+- `screen.bgr` -- BGR numpy array
+- `screen.gray` -- grayscale numpy array
+- `screen.hsv` -- HSV numpy array
 
 ## App Lifecycle
 
 ```python
 def start_app(self):
-    self.device.shell(f"monkey -p {self.package_name} -c ... 1")
+  self._adb.shell(f'monkey -p {GAME_PACKAGE} '
+                  '-c android.intent.category.LAUNCHER 1')
 
 def close_app(self):
-    self.device.shell(f"am force-stop {self.package_name}")
+  self._adb.shell(f'am force-stop {GAME_PACKAGE}')
 ```
 
-Package: `com.hwqgrhhjfd.idlefastfood`
+Package: `com.hwqgrhhjfd.idlefastfood` (`GAME_PACKAGE`). `start_app()` launches the game or brings it to the foreground; it does not restart a running game. `close_app()` is currently unused.
 
 ## Platform Differences
 

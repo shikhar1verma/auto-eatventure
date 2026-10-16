@@ -4,12 +4,12 @@
 
 ## Overview
 
-The project uses Python's built-in `logging` module configured in `logger.py`. All output goes through structured loggers instead of raw `print()` calls.
+The project uses Python's built-in `logging` module configured in `bot/logger.py`. All output goes through structured loggers instead of raw `print()` calls.
 
 ## Architecture
 
 ```
-logger.py              # setup_logging() + get_logger() + get_key_logger()
+bot/logger.py          # setup_logging() + key_log
   |
   +-- Console handler  # StreamHandler -> stdout (default: INFO)
   |
@@ -22,20 +22,22 @@ logger.py              # setup_logging() + get_logger() + get_key_logger()
 
 ## Configuration (via `.env`)
 
+Read in `bot/config.py`.
+
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `LOG_LEVEL` | `INFO` | Console output verbosity |
 | `LOG_FILE_LEVEL` | `DEBUG` | File output verbosity |
-| `LOG_MAX_DAYS` | `7` | Days to retain rotated log files |
+| `LOG_MAX_DAYS` | `30` (`.env-sample`: `7`) | Days to retain rotated log files |
 
 ## Log Levels
 
 | Level | Usage |
 |-------|-------|
-| `DEBUG` | Internal details: raw template match scores, pixel checks |
-| `INFO` | All game actions: upgrading station, opening boxes, food upgrades, chests, level transitions, ads, layout adjustments, stale swipes |
-| `WARNING` | Recovery actions: stale state (bring game to foreground), missing config, invalid env values |
-| `ERROR` | Failures: template not found, mask empty (used in debug scripts); a crash (uncaught exception) with its traceback |
+| `DEBUG` | Internal details: template match scores (with `DEBUG_TEMPLATE_MATCHING="1"`) |
+| `INFO` | All game actions: upgrading stations, opening boxes, buying upgrades, chests, level transitions, layout adjustments, stale swipes |
+| `WARNING` | Recovery actions: stale state (bring game to foreground), missing config, invalid env values, an expected screen not found (Okay / Open buttons, Adventures) |
+| `ERROR` | Failures: top bar not found at start (null spot fallback); a crash (uncaught exception) with its traceback |
 
 ## Crashes and End of the Bot
 
@@ -53,31 +55,30 @@ crash), a closed console window (SIGHUP, not on Windows) and `kill`
 ## Usage in Code
 
 ```python
-from logger import get_logger
+import logging
 
-log = get_logger(__name__)
+log = logging.getLogger(__name__)
 
-log.debug('Upgrading items')
-log.info('Chest found — opening.')
-log.warning('Nothing to update — bringing game to foreground.')
+log.info('Chest found — opening')
+log.warning('Nothing to update for %d loops — bringing game to '
+            'foreground.', idle_loops)
 ```
 
 ## Initialization
 
-`setup_logging()` must be called once at startup, after `load_dotenv()`:
+`setup_logging(console_level, file_level, max_days)` must be called
+once at startup, before logging. `run()` in `bot/main.py` does it with
+the levels from `bot/config.py` (which loads `.env`):
 
 ```python
-from dotenv import load_dotenv
-load_dotenv()
-
-from logger import setup_logging
-setup_logging()
+setup_logging(config.LOG_LEVEL, config.LOG_FILE_LEVEL,
+              config.LOG_MAX_DAYS)
 ```
 
-This is done in `adb_autoplay.py` (the entry point). Its first log
-line is `START - Bot started`, so every bot start is easy to find
-in `autoplay.log` (the key events log gets its own `START` entry
-once the game is initialized).
+Its first log line is `START - Bot started`, so every bot start is
+easy to find in `autoplay.log` (the key events log gets its own
+`START` entry once the game is ready, after
+`start_dialogs.wait_until_ready()`).
 
 ## File Output
 
@@ -109,17 +110,16 @@ A separate file recording only key milestones. Useful for tracking progress (e.g
 | `ADVENTURES` | Free Adventures rewards collected (only when something was collected) | `ADVENTURES - Collected rewards: Zeus' Feast 2x, Hangry Pirates 1x` |
 | `WARNING` | First stand's "Open" button not found after renovate / fly (should not normally happen) | `WARNING - Open button not found` |
 | `WARNING` | "Welcome to <city>" dialog's "Okay" button not found after fly (should not normally happen) | `WARNING - Okay button not found` |
-| `ERROR` | Top bar line not found at start, the null spot stays at the fallback from `coords.py`; the search must be fixed for this phone | `ERROR - Top bar not found (<reason>), null spot at fallback (x, y), popups may stay open or an ad may start; fix place_null_click_below_top_bar()` |
+| `ERROR` | Top bar line not found at start, the null spot stays at the fallback from `coords/reference.py`; the search must be fixed for this phone | `ERROR - Top bar not found (<reason>), null spot at fallback (x, y), popups may stay open or an ad may start; fix actions/null_spot.py` |
 | `ERROR` | The bot crashed (uncaught exception, e.g. the phone got disconnected); the traceback is in `autoplay.log` | `ERROR - Bot crashed: <exception type>, see autoplay.log` |
 | `STOP` | The bot was stopped: Ctrl+C, closed console window (SIGHUP) or `kill` (SIGTERM) | `STOP - Bot stopped (Ctrl+C)` |
 
 ### Usage:
 
 ```python
-from logger import get_key_logger
+from bot.logger import key_log
 
-key_log = get_key_logger()
-key_log.info("FLY - Flying to next city")
+key_log.info('FLY - Flying to next city')
 ```
 
 ### Example output (`logs/key_events.log`):
@@ -144,15 +144,15 @@ Console format matches previous `print()` output (message only, no timestamps). 
 ## File Output Format
 
 ```
-2024-01-15 14:23:01,234 [INFO ] game_actions: Chest found — opening.
+2024-01-15 14:23:01,234 [INFO ] actions.chests: Chest found — opening
 ```
 
 File format includes timestamp, level, and module name for debugging.
 
 ## Adding Log Statements
 
-1. Import the logger at module top: `from logger import get_logger`
-2. Create module logger: `log = get_logger(__name__)`
+1. Import logging at module top: `import logging`
+2. Create module logger: `log = logging.getLogger(__name__)`
 3. Use appropriate level: `log.debug()`, `log.info()`, `log.warning()`, `log.error()`
 4. Use `%s`-style formatting (not f-strings) in log calls for lazy evaluation:
    ```python
@@ -161,9 +161,9 @@ File format includes timestamp, level, and module name for debugging.
 
 ## Rules
 
-- Never use `print()` in core modules (`adb_autoplay.py`, `device.py`, `template_matcher.py`, `game_actions.py`).
+- Never use `print()` in the bot (`adb_autoplay.py`, `actions/`, `android/`, `bot/`, `coords/`, `vision/`).
 - Experimental scripts and `sandbox.py` may still use `print()` for interactive CLI output.
 - Default console level (`INFO`) produces the same output users saw before the migration.
 - Increase to `DEBUG` only when troubleshooting specific issues.
-- Key game milestones must also be logged via `get_key_logger()` for progress tracking.
+- Key game milestones must also be logged via `key_log` (`bot/logger.py`) for progress tracking.
 - Key event messages follow the pattern: `EVENT_TYPE - description`.

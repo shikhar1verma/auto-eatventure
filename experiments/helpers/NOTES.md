@@ -59,7 +59,7 @@ Invite button: HSV template `[866:930, 642:782]` of
 ROI around the first row (match 0.95 after scaling). Scores
 ~0.13-0.37 on all other screenshots. The loaded dialog's red X is
 found by the existing `popup_close_cross` (0.98), so
-`close_accidental_popups()` closes it on a failure.
+`popups.close_popup()` closes it on a failure.
 
 ## Unverified
 

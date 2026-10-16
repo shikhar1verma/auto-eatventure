@@ -18,6 +18,6 @@ And it recognizes emulator and do not allow you to login.
 
 Most of coordinates are adjusted for my resolution
 
-Turned off functionality
+Removed functionality (no longer in the code)
  - add bonuses
  - investors

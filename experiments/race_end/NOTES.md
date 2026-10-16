@@ -8,7 +8,8 @@ covered the game on both phones.
   "Claim" (no ad icon). NO red X. User: tap Claim.
   Xiaomi: Claim ~(540, 1843); OnePlus ~(619, 2132).
 - Why the bot didn't recover: `get_food_icon_locations()` (grayscale
-  template) still finds a dimmed station upgrade arrow at the left
+  template; since replaced, see `experiments/upgrade_icons/NOTES.md`)
+  still finds a dimmed station upgrade arrow at the left
   edge (Xiaomi (70, 1756)), taps it (lands on the dark backdrop, does
   nothing), and since food icons were "found", nothing_to_update never
   grows, so the stale recovery never runs.
