@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-1. **Python 3.10+** (uses `tuple[int, int]` type hints)
+1. **Python 3.10+**
 2. **A physical Android device** (recommended) or Android Studio emulator
 3. **ADB** installed and on system PATH
 4. **Eatventure** game installed on the device/emulator
@@ -49,7 +49,7 @@ Copy `.env-sample` to `.env` and configure:
 # Optional: target specific device (from `adb devices`)
 device_serial=""
 
-# Debug: print raw template matching values (very noisy)
+# Debug: log the score of every template check (very noisy)
 DEBUG_TEMPLATE_MATCHING="0"
 
 # Optional: override auto-computed template scale factor
@@ -100,20 +100,23 @@ Pylint configured via `.pylintrc`:
 - 2-space indentation
 - Max line length: 79 characters
 - LF line endings
+- `cv2.*` as generated members (compiled module)
+- No docstring needed for functions shorter than 5 lines
 
 ```bash
-pylint adb_autoplay.py device.py template_matcher.py game_actions.py
+pylint adb_autoplay.py actions android bot coords vision sandbox.py
 ```
 
 ## Source File Layout
 
 ```
-adb_autoplay.py              # Entry point + game loop (~86 lines)
-logger.py                    # Logging setup (~75 lines)
-device.py                    # ADB device layer (~115 lines)
-template_matcher.py          # OpenCV matching (~267 lines)
-game_actions.py              # Game logic (~411 lines)
-coords.py                    # Reference coordinates
-scaled_coords.py             # Resolution scaling
-constants.py                 # Coordinate dicts
+adb_autoplay.py              # Entry point
+bot/                         # Start-up, game loop, settings, timer, logging
+actions/                     # Game actions, one module per feature
+android/                     # ADB device layer
+vision/                      # Screenshot, template matching, colors, icons
+coords/                      # Reference positions, geometry, scaling
+sandbox.py                   # Interactive testing tool
 ```
+
+See [Architecture](architecture.md) for the modules.

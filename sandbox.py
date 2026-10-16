@@ -1,474 +1,472 @@
 """
 sandbox.py - Interactive testing tool for auto-eatventure
 
-Templates are automatically scaled to match the detected device resolution,
-the same way adb_autoplay.py scales them at runtime.
+Templates are automatically scaled to match the detected device
+resolution, the same way the bot scales them at runtime.
 
 Commands:
-  sc [name]          - Take a screenshot. Optionally save as template with given name.
-  save <name>        - Save the last screenshot as a new PNG template to matching_screenshots/
-  crop <x> <y> <w> <h> <name>  - Crop region from last screenshot and save as template
-  match <template> [threshold]     - Test HSV template matching against last screenshot
-  match_gray <template> [threshold] - Test grayscale matching against last screenshot
-  match_all <template> [threshold]  - Find all matches of template in last screenshot
-  match_box [threshold]  - Test box detection exactly as main app does (color mask + matching)
-  diag [tmpl ...]    - Score all (or listed) templates against last screenshot and annotate
-  show               - Open the last screenshot in the default viewer
-  show_annot         - Show last screenshot with match annotations
-  list               - List available templates
-  tap <x> <y>        - Tap a coordinate on the device
-  help               - Show this help
-  q / quit           - Exit
+  sc [name]                  - Take a screenshot. Optionally save it as
+                               a template with the given name.
+  save <name>                - Save the last screenshot as a new PNG
+                               template to matching_screenshots/
+  crop <x> <y> <w> <h> <name>
+                             - Crop a region from the last screenshot
+                               and save it as a template
+  match <template> [threshold]
+                             - Test HSV template matching against the
+                               last screenshot
+  match_gray <template> [threshold]
+                             - Test grayscale matching against the
+                               last screenshot
+  match_all <template> [threshold]
+                             - Find all matches (HSV, clustered) of the
+                               template in the last screenshot
+  match_box [threshold]      - Test box detection exactly as the bot
+                               does (actions/boxes.py)
+  diag [tmpl ...]            - Score all (or the listed) templates
+                               against the last screenshot, annotate
+  show                       - Open the last screenshot in the default
+                               viewer
+  show_annot                 - Show the last screenshot with match
+                               annotations
+  list                       - List available templates
+  tap <x> <y>                - Tap a coordinate on the device
+  help                       - Show this help
+  q / quit                   - Exit
 
-Annotations: RED circle = match above threshold, YELLOW circle = best location below threshold
+Annotations: RED circle = match above threshold,
+             YELLOW circle = best location below threshold
 """
 
 import os
-import sys
-import io
 import subprocess
-import numpy as np
+import sys
+
 import cv2
-from PIL import Image
-from adbutils import adb
-from dotenv import load_dotenv
-from scaled_coords import ScaledCoords, detect_resolution
 
-load_dotenv()
+from actions.boxes import BOX_THRESHOLD
+from android.device import Device
+from bot import config
+from coords.geometry import Point, Region
+from coords.scaled import ScaledCoords
+from vision import matching
+from vision.templates import TEMPLATES_DIR, load_template
 
-CAPTURED_PATH = "./captured_screenshots_on_the_fly/screenshot.png"
-TEMPLATES_DIR = "./matching_screenshots"
-ANNOTATED_PATH = "./captured_screenshots_on_the_fly/annotated_screenshot.png"
+CAPTURED_PATH = 'captured_screenshots_on_the_fly/screenshot.png'
+ANNOTATED_PATH = (
+  'captured_screenshots_on_the_fly/annotated_screenshot.png')
 
+DEFAULT_THRESHOLD = 0.8
+# diag: a best score at least this high is "close" to a match
+CLOSE_THRESHOLD = 0.6
 
-def get_device():
-    serial = os.getenv("device_serial", os.getenv("DEVICE_SERIAL", "")).strip()
-    if serial:
-        device = adb.device(serial=serial)
-    else:
-        devices = adb.device_list()
-        if not devices:
-            raise RuntimeError("No ADB devices connected. Connect your phone and enable USB Debugging.")
-        device = devices[0]
-        print(f"  [sandbox] No device_serial in .env — using first connected device: {device.serial}")
-    print(f"Connected to device: {device.serial}")
-    return device
+# Radius of the circles marking matches in the annotated screenshot
+ANNOTATION_RADIUS = 14
 
+# BGR colors of the annotations
+RED = (0, 0, 255)
+ORANGE = (0, 165, 255)
+YELLOW = (0, 255, 255)
+GREEN = (0, 255, 0)
 
-def capture_screenshot(device) -> np.ndarray:
-    """Capture screenshot from device, return as BGR numpy array."""
-    adb_command = f"adb -s {device.serial} shell screencap -p"
-    output = subprocess.check_output(adb_command.split())
-    output = output.replace(b"\r\n", b"\n")
-    pilimg = Image.open(io.BytesIO(output))
-    pilimg.load()
-    pilimg = pilimg.convert("RGB")
-    bgr = np.array(pilimg)[:, :, ::-1].copy()
-    return bgr
+QUIT_COMMANDS = ('q', 'quit', 'exit')
 
 
-def save_image(bgr: np.ndarray, path: str):
-    os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
-    cv2.imwrite(path, bgr)
-    print(f"  Saved: {path}")
+class Sandbox:
+  """State shared by the commands: the device, its scale, the
+  templates and the last screenshot."""
+
+  def __init__(self, device):
+    self.device = device
+    self.coords = ScaledCoords(*device.screen_size())
+    self.templates = {}
+    self.bgr = None
+    self.hsv = None
+    self.gray = None
+
+  def load_templates(self):
+    """Load all PNGs of TEMPLATES_DIR, resized to the device."""
+    self.templates = {}
+    for file_name in sorted(os.listdir(TEMPLATES_DIR)):
+      name, extension = os.path.splitext(file_name)
+      if extension.lower() != '.png':
+        continue
+      path = os.path.join(TEMPLATES_DIR, file_name)
+      try:
+        self.templates[name] = load_template(
+          path, self.coords.x_scale, self.coords.y_scale)
+      except FileNotFoundError as error:
+        print(f'  {error} — skipped.')
+
+  def capture(self):
+    """Take a new screenshot and save it to CAPTURED_PATH."""
+    self.bgr = self.device.screenshot()
+    self.hsv = cv2.cvtColor(self.bgr, cv2.COLOR_BGR2HSV)
+    self.gray = _gray(self.bgr)
+    _save_image(self.bgr, CAPTURED_PATH)
+    print(f'  Size: {self.bgr.shape[1]}x{self.bgr.shape[0]}')
+
+  def save_template(self, image, name):
+    """Save the image as template <name> and reload the templates."""
+    _save_image(image, os.path.join(TEMPLATES_DIR, f'{name}.png'))
+    self.load_templates()
+
+  def has_screenshot(self):
+    if self.bgr is None:
+      print("  No screenshot yet. Run 'sc' first.")
+      return False
+    return True
+
+  def template(self, name):
+    """The template of this name, else None (with a message)."""
+    if name not in self.templates:
+      print(f"  Template '{name}' not found. "
+            "Use 'list' to see available templates.")
+      return None
+    return self.templates[name]
 
 
-def load_templates(directory: str) -> dict:
-    templates = {}
-    for fname in os.listdir(directory):
-        if fname.lower().endswith(".png"):
-            name = os.path.splitext(fname)[0]
-            path = os.path.join(directory, fname)
-            simple = cv2.imread(path)
-            if simple is None:
-                continue
-            templates[name] = {
-                "simple": simple,
-                "grayscale": cv2.cvtColor(simple, cv2.COLOR_BGR2GRAY),
-                "bgr2hsv": cv2.cvtColor(simple, cv2.COLOR_BGR2HSV),
-                "path": path,
-            }
-    return templates
+# ── commands: each takes the Sandbox and the arguments (strings) ──────
 
 
-def resize_templates(templates: dict, x_scale: float, y_scale: float) -> dict:
-    """Resize all loaded templates proportionally to the detected device resolution.
-
-    Mirrors the scaling done by adb_autoplay.py so sandbox scores are comparable.
-    """
-    if abs(x_scale - 1.0) < 0.001 and abs(y_scale - 1.0) < 0.001:
-        return templates
-    resized = {}
-    for name, data in templates.items():
-        simple = data["simple"]
-        h, w = simple.shape[:2]
-        target_w = max(1, round(w * x_scale))
-        target_h = max(1, round(h * y_scale))
-        interp = cv2.INTER_AREA if (target_w < w or target_h < h) else cv2.INTER_LINEAR
-        r_simple = cv2.resize(simple, (target_w, target_h), interpolation=interp)
-        resized[name] = {
-            "simple": r_simple,
-            "grayscale": cv2.cvtColor(r_simple, cv2.COLOR_BGR2GRAY),
-            "bgr2hsv": cv2.cvtColor(r_simple, cv2.COLOR_BGR2HSV),
-            "path": data["path"],
-        }
-    return resized
+def cmd_sc(sandbox, args):
+  """Take a screenshot, optionally save it as a template."""
+  print('  Capturing screenshot...')
+  sandbox.capture()
+  if args:
+    sandbox.save_template(sandbox.bgr, args[0])
+    print(f"  Template '{args[0]}' added.")
 
 
-def apply_box_mask(image: np.ndarray, tolerance: int = 2) -> np.ndarray:
-    """Mirror of AutoEatventure.apply_box_mask — keeps only box-colored pixels."""
-    colors = [(13, 152, 171), (14, 155, 140)]
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    combined_mask = np.zeros_like(hsv[:, :, 0])
-    for color in colors:
-        lower = np.array([max(color[0] - tolerance, 0), max(color[1] - tolerance, 0), max(color[2] - tolerance, 0)])
-        upper = np.array([min(color[0] + tolerance, 180), min(color[1] + tolerance, 255), min(color[2] + tolerance, 255)])
-        combined_mask = cv2.bitwise_or(combined_mask, cv2.inRange(hsv, lower, upper))
-    return cv2.bitwise_and(image, image, mask=combined_mask)
+def cmd_save(sandbox, args):
+  """Save the last screenshot as a template."""
+  if not args:
+    print('  Usage: save <name>')
+  elif sandbox.has_screenshot():
+    sandbox.save_template(sandbox.bgr, args[0])
+    print(f"  Template '{args[0]}' added.")
 
 
-def count_nonzero_pixels(image: np.ndarray) -> int:
-    """Count pixels that survived a mask (non-black)."""
-    if len(image.shape) == 2:
-        return int(np.count_nonzero(image))
-    return int(np.count_nonzero(image[:, :, 0]) + np.count_nonzero(image[:, :, 1]) + np.count_nonzero(image[:, :, 2]))
-    result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
-    _, max_val, _, max_loc = cv2.minMaxLoc(result)
-    print(f"  max_val={max_val:.4f}  max_loc={max_loc}  threshold={threshold}")
-    if max_val >= threshold:
-        return max_loc, max_val
-    return None, max_val
+def cmd_crop(sandbox, args):
+  """Save a region of the last screenshot as a template."""
+  if len(args) < 5:
+    print('  Usage: crop <x> <y> <w> <h> <name>')
+    return
+  if not sandbox.has_screenshot():
+    return
+  try:
+    x, y, width, height = (int(arg) for arg in args[:4])
+  except ValueError:
+    print('  All of x, y, w, h must be integers.')
+    return
+  name = args[4]
+  image = Region(x, y, x + width, y + height).crop(sandbox.bgr)
+  if image.size == 0:
+    print('  Empty region — check coordinates.')
+    return
+  sandbox.save_template(image, name)
+  print(f"  Cropped template '{name}' saved "
+        f'({width}x{height} px at {x},{y}).')
 
 
-def find_all_templates(image: np.ndarray, template: np.ndarray, threshold=0.8):
-    h, w = template.shape[:2]
-    result = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
-    locations = np.where(result >= threshold)
-    coords = [(int(x + w // 2), int(y + h // 2)) for x, y in zip(*locations[::-1])]
-    return coords
+def cmd_match(sandbox, args):
+  _match_best(sandbox, args, 'match', _hsv_images)
 
 
-def annotate_and_save(bgr: np.ndarray, point_list: list, path: str, sc: ScaledCoords, template_shape=None, color=(0, 0, 255)):
-    annotated = bgr.copy()
-    for x, y in point_list:
-        cv2.circle(annotated, (x, y), radius=sc.annotation_radius, color=(0, 0, 255), thickness=3)
-        if template_shape:
-            h, w = template_shape[:2]
-            cv2.rectangle(annotated, (x - w // 2, y - h // 2), (x + w // 2, y + h // 2), (0, 255, 0), 2)
-    save_image(annotated, path)
+def cmd_match_gray(sandbox, args):
+  _match_best(sandbox, args, 'match_gray', _gray_images)
 
 
-def open_image(path: str):
-    """Open image with OS default viewer."""
-    if sys.platform == "win32":
-        os.startfile(os.path.abspath(path))
-    else:
-        subprocess.Popen(["xdg-open", path])
+def cmd_match_all(sandbox, args):
+  """All matches (HSV) of a template, clustered like the bot."""
+  if not args:
+    print('  Usage: match_all <template_name> [threshold]')
+    return
+  if not sandbox.has_screenshot():
+    return
+  template = sandbox.template(args[0])
+  if template is None:
+    return
+  threshold = _threshold(args, 1, DEFAULT_THRESHOLD)
+  points = matching.all_matches(sandbox.hsv, template.hsv, threshold)
+  print(f'  Found {len(points)} match(es): {_points_text(points)}')
+  if points:
+    annotated = sandbox.bgr.copy()
+    for point in points:
+      _mark(annotated, point, RED)
+      _frame(annotated, _template_region(point, template))
+    _save_annotated(annotated)
 
 
-def print_help():
-    print(__doc__)
+def cmd_match_box(sandbox, args):
+  """Same as actions.boxes.open_all(): all matches (BGR) of 'box',
+  of 'box2' only when 'box' is not found."""
+  if not sandbox.has_screenshot():
+    return
+  threshold = _threshold(args, 0, BOX_THRESHOLD)
+  for name in ('box', 'box2'):
+    template = sandbox.template(name)
+    if template is None:
+      continue
+    points = matching.all_matches(sandbox.bgr, template.bgr, threshold)
+    print(f'  {name}: {len(points)} match(es) at threshold '
+          f'{threshold}: {_points_text(points)}')
+    if points:
+      annotated = sandbox.bgr.copy()
+      for point in points:
+        _mark(annotated, point, RED, name)
+        _frame(annotated, _template_region(point, template))
+      _save_annotated(annotated)
+      return
+  print('  No box found.')
+
+
+def cmd_diag(sandbox, args):
+  """Best HSV and grayscale score of each template, best first; the
+  better of the two is annotated."""
+  if sandbox.bgr is None:
+    print('  Capturing screenshot first...')
+    sandbox.capture()
+  rows = _diag_rows(sandbox, args or sorted(sandbox.templates))
+
+  print(f"\n  {'TEMPLATE':<35} {'HSV':>6}  {'GRAY':>6}  STATUS")
+  print(f"  {'-' * 35} {'-' * 6}  {'-' * 6}  ------")
+  annotated = sandbox.bgr.copy()
+  for name, hsv, gray in rows:
+    score, region = max(hsv, gray, key=lambda match: match[0])
+    status, color = _diag_status(score)
+    print(f'  {name:<35} {hsv[0]:>6.3f}  {gray[0]:>6.3f}  {status}')
+    _mark(annotated, region.center, color, f'{score:.2f}')
+  print()
+  _save_annotated(annotated)
+  print(f'  RED=match(>={DEFAULT_THRESHOLD})  '
+        f'ORANGE=close(>={CLOSE_THRESHOLD})  '
+        f'YELLOW=miss(<{CLOSE_THRESHOLD})')
+
+
+def cmd_show(sandbox, _args):
+  if sandbox.has_screenshot():
+    _open_image(CAPTURED_PATH)
+
+
+def cmd_show_annot(_sandbox, _args):
+  if not os.path.exists(ANNOTATED_PATH):
+    print('  No annotated screenshot yet. Run a match command first.')
+  else:
+    _open_image(ANNOTATED_PATH)
+
+
+def cmd_list(sandbox, _args):
+  """List the templates with their (scaled) sizes."""
+  if not sandbox.templates:
+    print('  No templates found.')
+    return
+  print(f'  Templates in {TEMPLATES_DIR}/:')
+  for name, template in sorted(sandbox.templates.items()):
+    print(f'    {name:<35} {template.width}x{template.height}px')
+
+
+def cmd_tap(sandbox, args):
+  """Tap a point (device pixels) on the device."""
+  if len(args) < 2:
+    print('  Usage: tap <x> <y>')
+    return
+  try:
+    point = Point(int(args[0]), int(args[1]))
+  except ValueError:
+    print('  x and y must be integers.')
+    return
+  sandbox.device.tap(point)
+  print(f'  Tapped ({point.x}, {point.y})')
+
+
+def cmd_help(_sandbox, _args):
+  print(__doc__)
+
+
+COMMANDS = {
+  'sc': cmd_sc,
+  'save': cmd_save,
+  'crop': cmd_crop,
+  'match': cmd_match,
+  'match_gray': cmd_match_gray,
+  'match_all': cmd_match_all,
+  'match_box': cmd_match_box,
+  'diag': cmd_diag,
+  'show': cmd_show,
+  'show_annot': cmd_show_annot,
+  'list': cmd_list,
+  'tap': cmd_tap,
+  'help': cmd_help,
+}
+
+
+# ── helpers ───────────────────────────────────────────────────────────
+
+
+def _match_best(sandbox, args, command, images):
+  """match / match_gray: the best match of one template.
+
+  images(sandbox, template) gives the (screenshot, template) images
+  to match in the wanted color space.
+  """
+  if not args:
+    print(f'  Usage: {command} <template_name> [threshold]')
+    return
+  if not sandbox.has_screenshot():
+    return
+  template = sandbox.template(args[0])
+  if template is None:
+    return
+  threshold = _threshold(args, 1, DEFAULT_THRESHOLD)
+  score, region = matching.best_match(*images(sandbox, template))
+  center = region.center
+  matched = score >= threshold
+  if matched:
+    print(f'  MATCH at center=({center.x},{center.y})  '
+          f'score={score:.4f}  (threshold={threshold})')
+  else:
+    print(f'  No match — best score={score:.4f} at '
+          f'center=({center.x},{center.y})  threshold={threshold}')
+  annotated = sandbox.bgr.copy()
+  _mark(annotated, center, RED if matched else YELLOW)
+  _frame(annotated, region)
+  _save_annotated(annotated)
+
+
+def _hsv_images(sandbox, template):
+  return sandbox.hsv, template.hsv
+
+
+def _gray_images(sandbox, template):
+  return sandbox.gray, _gray(template.bgr)
+
+
+def _gray(bgr):
+  return cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+
+
+def _threshold(args, index, default):
+  """The threshold argument at the index, else the default."""
+  return float(args[index]) if len(args) > index else default
+
+
+def _diag_rows(sandbox, names):
+  """(name, HSV match, gray match) of the templates, best first.
+
+  A match is (score, Region) of matching.best_match().
+  """
+  rows = []
+  for name in names:
+    template = sandbox.templates.get(name)
+    if template is None:
+      print(f"  Template '{name}' not found — skipped.")
+      continue
+    hsv = matching.best_match(sandbox.hsv, template.hsv)
+    gray = matching.best_match(sandbox.gray, _gray(template.bgr))
+    rows.append((name, hsv, gray))
+  rows.sort(key=lambda row: max(row[1][0], row[2][0]), reverse=True)
+  return rows
+
+
+def _diag_status(score):
+  """(status text, annotation color) of a diag score."""
+  if score >= DEFAULT_THRESHOLD:
+    return '✓ match', RED
+  if score >= CLOSE_THRESHOLD:
+    return '~ close', ORANGE
+  return '✗ miss', YELLOW
+
+
+def _template_region(center, template):
+  return Region.around(center, template.width // 2,
+                       template.height // 2)
+
+
+def _points_text(points):
+  return [tuple(point) for point in points]
+
+
+def _mark(image, center, color, label=''):
+  """Circle the point in the image, with an optional label."""
+  cv2.circle(image, center, ANNOTATION_RADIUS, color, thickness=3)
+  if label:
+    cv2.putText(image, label, (center.x + 8, center.y - 8),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
+
+
+def _frame(image, region):
+  cv2.rectangle(image, (region.left, region.top),
+                (region.right, region.bottom), GREEN, 2)
+
+
+def _save_annotated(image):
+  _save_image(image, ANNOTATED_PATH)
+  print("  Annotated screenshot saved — run 'show_annot' to view.")
+
+
+def _save_image(image, path):
+  os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+  cv2.imwrite(path, image)
+  print(f'  Saved: {path}')
+
+
+def _open_image(path):
+  """Open the image in the OS default viewer."""
+  if sys.platform == 'win32':
+    os.startfile(os.path.abspath(path))  # pylint: disable=no-member
+  else:
+    # The viewer keeps running on its own, so no "with"
+    # pylint: disable-next=consider-using-with
+    subprocess.Popen(['xdg-open', path])
+
+
+def _print_scale(sandbox):
+  x_scale, y_scale = sandbox.coords.x_scale, sandbox.coords.y_scale
+  if abs(x_scale - 1.0) > 0.001 or abs(y_scale - 1.0) > 0.001:
+    print(f'  [sandbox] Templates scaled x={x_scale:.4f}, '
+          f'y={y_scale:.4f} to match device resolution.')
+  else:
+    print('  [sandbox] Device matches reference resolution — '
+          'templates used at original size.')
+
+
+def run_commands(sandbox):
+  """Read and run commands until quit."""
+  while True:
+    try:
+      line = input('sandbox> ').strip()
+    except (EOFError, KeyboardInterrupt):
+      print('\nBye!')
+      return
+    if not line:
+      continue
+    command, *args = line.split()
+    command = command.lower()
+    if command in QUIT_COMMANDS:
+      print('Bye!')
+      return
+    if command not in COMMANDS:
+      print(f"  Unknown command '{command}'. "
+            "Type 'help' for available commands.")
+      continue
+    try:
+      COMMANDS[command](sandbox, args)
+    except (ValueError, cv2.error) as error:
+      print(f'  Error: {error}')
 
 
 def main():
-    print("=== auto-eatventure sandbox ===")
-    print("Type 'help' for available commands.\n")
-
-    device = get_device()
-    actual_w, actual_h = detect_resolution(device)
-    sc = ScaledCoords(actual_w, actual_h)
-    templates = load_templates(TEMPLATES_DIR)
-    templates = resize_templates(templates, sc.x_scale, sc.y_scale)
-    if abs(sc.x_scale - 1.0) > 0.001 or abs(sc.y_scale - 1.0) > 0.001:
-        print(f"  [sandbox] Templates scaled x={sc.x_scale:.4f}, y={sc.y_scale:.4f} to match device resolution.")
-    else:
-        print(f"  [sandbox] Device matches reference resolution — templates used at original size.")
-    last_bgr: np.ndarray | None = None
-    last_match_coords: list = []
-    last_match_template_name: str | None = None
-
-    while True:
-        try:
-            raw = input("sandbox> ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\nBye!")
-            break
-
-        if not raw:
-            continue
-
-        parts = raw.split()
-        cmd = parts[0].lower()
-
-        # ── screenshot ────────────────────────────────────────────────────────
-        if cmd == "sc":
-            print("  Capturing screenshot...")
-            last_bgr = capture_screenshot(device)
-            save_image(last_bgr, CAPTURED_PATH)
-            if len(parts) >= 2:
-                template_name = parts[1]
-                dest = os.path.join(TEMPLATES_DIR, f"{template_name}.png")
-                save_image(last_bgr, dest)
-                templates = load_templates(TEMPLATES_DIR)
-                print(f"  Template '{template_name}' added.")
-            print(f"  Size: {last_bgr.shape[1]}x{last_bgr.shape[0]}")
-
-        # ── save last screenshot as template ──────────────────────────────────
-        elif cmd == "save":
-            if len(parts) < 2:
-                print("  Usage: save <name>")
-            elif last_bgr is None:
-                print("  No screenshot captured yet. Run 'sc' first.")
-            else:
-                name = parts[1]
-                dest = os.path.join(TEMPLATES_DIR, f"{name}.png")
-                save_image(last_bgr, dest)
-                templates = load_templates(TEMPLATES_DIR)
-                print(f"  Template '{name}' added.")
-
-        # ── crop region and save as template ─────────────────────────────────
-        elif cmd == "crop":
-            if len(parts) < 6:
-                print("  Usage: crop <x> <y> <w> <h> <name>")
-            elif last_bgr is None:
-                print("  No screenshot captured yet. Run 'sc' first.")
-            else:
-                try:
-                    x, y, w, h, name = int(parts[1]), int(parts[2]), int(parts[3]), int(parts[4]), parts[5]
-                    region = last_bgr[y:y+h, x:x+w]
-                    if region.size == 0:
-                        print("  Empty region — check coordinates.")
-                    else:
-                        dest = os.path.join(TEMPLATES_DIR, f"{name}.png")
-                        save_image(region, dest)
-                        templates = load_templates(TEMPLATES_DIR)
-                        print(f"  Cropped template '{name}' saved ({w}x{h} px at {x},{y}).")
-                except ValueError:
-                    print("  All of x, y, w, h must be integers.")
-
-        # ── template matching (hsv) ───────────────────────────────────────────
-        elif cmd == "match":
-            if len(parts) < 2:
-                print("  Usage: match <template_name> [threshold]")
-            elif last_bgr is None:
-                print("  No screenshot yet. Run 'sc' first.")
-            else:
-                name = parts[1]
-                threshold = float(parts[2]) if len(parts) >= 3 else 0.8
-                if name not in templates:
-                    print(f"  Template '{name}' not found. Use 'list' to see available templates.")
-                else:
-                    hsv_sc = cv2.cvtColor(last_bgr, cv2.COLOR_BGR2HSV)
-                    hsv_tmpl = templates[name]["bgr2hsv"]
-                    h, w = hsv_tmpl.shape[:2]
-                    result = cv2.matchTemplate(hsv_sc, hsv_tmpl, cv2.TM_CCOEFF_NORMED)
-                    _, best_val, _, best_loc = cv2.minMaxLoc(result)
-                    cx, cy = best_loc[0] + w // 2, best_loc[1] + h // 2
-                    matched = best_val >= threshold
-                    last_match_coords = [(cx, cy)]
-                    last_match_template_name = name
-                    color = (0, 0, 255) if matched else (0, 255, 255)  # red=match, yellow=miss
-                    annotate_and_save(last_bgr, last_match_coords, ANNOTATED_PATH, sc, hsv_tmpl.shape, color=color)
-                    if matched:
-                        print(f"  MATCH at center=({cx},{cy})  score={best_val:.4f}  (threshold={threshold})")
-                    else:
-                        print(f"  No match — best score={best_val:.4f} at center=({cx},{cy})  threshold={threshold}")
-                        print(f"  Yellow circle saved — run 'show_annot' to see where the best match was.")
-
-        # ── grayscale matching ────────────────────────────────────────────────
-        elif cmd == "match_gray":
-            if len(parts) < 2:
-                print("  Usage: match_gray <template_name> [threshold]")
-            elif last_bgr is None:
-                print("  No screenshot yet. Run 'sc' first.")
-            else:
-                name = parts[1]
-                threshold = float(parts[2]) if len(parts) >= 3 else 0.8
-                if name not in templates:
-                    print(f"  Template '{name}' not found.")
-                else:
-                    gray_sc = cv2.cvtColor(last_bgr, cv2.COLOR_BGR2GRAY)
-                    gray_tmpl = templates[name]["grayscale"]
-                    h, w = gray_tmpl.shape[:2]
-                    result = cv2.matchTemplate(gray_sc, gray_tmpl, cv2.TM_CCOEFF_NORMED)
-                    _, best_val, _, best_loc = cv2.minMaxLoc(result)
-                    cx, cy = best_loc[0] + w // 2, best_loc[1] + h // 2
-                    matched = best_val >= threshold
-                    last_match_coords = [(cx, cy)]
-                    last_match_template_name = name
-                    color = (0, 0, 255) if matched else (0, 255, 255)  # red=match, yellow=miss
-                    annotate_and_save(last_bgr, last_match_coords, ANNOTATED_PATH, sc, gray_tmpl.shape, color=color)
-                    if matched:
-                        print(f"  MATCH at center=({cx},{cy})  score={best_val:.4f}  (threshold={threshold})")
-                    else:
-                        print(f"  No match — best score={best_val:.4f} at center=({cx},{cy})  threshold={threshold}")
-                        print(f"  Yellow circle saved — run 'show_annot' to see where the best match was.")
-
-        # ── find all matches ──────────────────────────────────────────────────
-        elif cmd == "match_all":
-            if len(parts) < 2:
-                print("  Usage: match_all <template_name>")
-            elif last_bgr is None:
-                print("  No screenshot yet. Run 'sc' first.")
-            else:
-                name = parts[1]
-                threshold = float(parts[2]) if len(parts) >= 3 else 0.8
-                if name not in templates:
-                    print(f"  Template '{name}' not found.")
-                else:
-                    hsv_sc = cv2.cvtColor(last_bgr, cv2.COLOR_BGR2HSV)
-                    hsv_tmpl = templates[name]["bgr2hsv"]
-                    coords = find_all_templates(hsv_sc, hsv_tmpl, threshold)
-                    print(f"  Found {len(coords)} match(es): {coords}")
-                    last_match_coords = coords
-                    last_match_template_name = name
-                    if coords:
-                        annotate_and_save(last_bgr, coords, ANNOTATED_PATH, sc, hsv_tmpl.shape)
-
-        # ── match_box: exact replica of main-app box detection ────────────────
-        elif cmd == "match_box":
-            if last_bgr is None:
-                print("  No screenshot yet. Run 'sc' first.")
-            else:
-                threshold = float(parts[1]) if len(parts) >= 2 else 0.7
-                masked_sc = apply_box_mask(last_bgr)
-                nonzero_sc = count_nonzero_pixels(masked_sc)
-                print(f"  Box-color pixels in screenshot: {nonzero_sc}")
-                if nonzero_sc == 0:
-                    print("  WARNING: color mask found NO pixels — box color not present on screen.")
-                    print("  Box detection will always fail. Check if a box is actually visible on screen.")
-
-                results = []
-                for tmpl_name in ("box", "box2"):
-                    if tmpl_name not in templates:
-                        print(f"  Template '{tmpl_name}' not found — skipped.")
-                        continue
-                    masked_tmpl = apply_box_mask(templates[tmpl_name]["simple"])
-                    nonzero_tmpl = count_nonzero_pixels(masked_tmpl)
-                    if nonzero_tmpl == 0:
-                        print(f"  WARNING: '{tmpl_name}' template has 0 pixels after mask — "
-                              "template color doesn't match mask colors. Box detection won't work.")
-                        continue
-                    result = cv2.matchTemplate(masked_sc, masked_tmpl, cv2.TM_CCOEFF_NORMED)
-                    _, best_val, _, best_loc = cv2.minMaxLoc(result)
-                    h, w = masked_tmpl.shape[:2]
-                    cx, cy = best_loc[0] + w // 2, best_loc[1] + h // 2
-                    matched = best_val >= threshold
-                    results.append((tmpl_name, best_val, (cx, cy), matched))
-                    status = "MATCH" if matched else "miss"
-                    print(f"  {tmpl_name}: score={best_val:.4f} at center=({cx},{cy})  [{status}]  "
-                          f"(template pixels after mask: {nonzero_tmpl})")
-
-                if results:
-                    annotated = last_bgr.copy()
-                    for tmpl_name, val, (cx, cy), matched in results:
-                        color = (0, 0, 255) if matched else (0, 255, 255)
-                        cv2.circle(annotated, (cx, cy), radius=sc.annotation_radius, color=color, thickness=3)
-                        cv2.putText(annotated, f"{tmpl_name}:{val:.2f}", (cx + 8, cy - 8),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
-                    save_image(annotated, ANNOTATED_PATH)
-                    print("  Annotated screenshot saved — run 'show_annot' to view.")
-
-        # ── diag ─────────────────────────────────────────────────────────────
-        elif cmd == "diag":
-            if last_bgr is None:
-                print("  Capturing screenshot first...")
-                last_bgr = capture_screenshot(device)
-                save_image(last_bgr, CAPTURED_PATH)
-                print(f"  Size: {last_bgr.shape[1]}x{last_bgr.shape[0]}")
-
-            key_list = parts[1:] if len(parts) > 1 else sorted(templates.keys())
-            hsv_sc = cv2.cvtColor(last_bgr, cv2.COLOR_BGR2HSV)
-            gray_sc = cv2.cvtColor(last_bgr, cv2.COLOR_BGR2GRAY)
-
-            rows = []
-            for name in key_list:
-                if name not in templates:
-                    print(f"  Template '{name}' not found — skipped.")
-                    continue
-                # HSV score
-                hsv_result = cv2.matchTemplate(hsv_sc, templates[name]["bgr2hsv"], cv2.TM_CCOEFF_NORMED)
-                _, hsv_val, _, hsv_loc = cv2.minMaxLoc(hsv_result)
-                # grayscale score
-                gray_result = cv2.matchTemplate(gray_sc, templates[name]["grayscale"], cv2.TM_CCOEFF_NORMED)
-                _, gray_val, _, gray_loc = cv2.minMaxLoc(gray_result)
-                rows.append((name, hsv_val, hsv_loc, gray_val, gray_loc, templates[name]["bgr2hsv"].shape))
-
-            rows.sort(key=lambda r: max(r[1], r[3]), reverse=True)
-
-            print(f"\n  {'TEMPLATE':<35} {'HSV':>6}  {'GRAY':>6}  STATUS")
-            print(f"  {'-'*35} {'-'*6}  {'-'*6}  ------")
-            annotated = last_bgr.copy()
-            for name, hsv_val, hsv_loc, gray_val, gray_loc, shape in rows:
-                best_val = max(hsv_val, gray_val)
-                best_loc = hsv_loc if hsv_val >= gray_val else gray_loc
-                h_t, w_t = shape[:2]
-                cx, cy = best_loc[0] + w_t // 2, best_loc[1] + h_t // 2
-                if best_val >= 0.8:
-                    status = "✓ match"
-                    dot_color = (0, 0, 255)      # red
-                elif best_val >= 0.6:
-                    status = "~ close"
-                    dot_color = (0, 165, 255)    # orange
-                else:
-                    status = "✗ miss"
-                    dot_color = (0, 255, 255)    # yellow
-                print(f"  {name:<35} {hsv_val:>6.3f}  {gray_val:>6.3f}  {status}")
-                cv2.circle(annotated, (cx, cy), radius=sc.annotation_radius, color=dot_color, thickness=2)
-                cv2.putText(annotated, f"{best_val:.2f}", (cx + 8, cy - 8),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, dot_color, 1)
-
-            save_image(annotated, ANNOTATED_PATH)
-            print(f"\n  Annotated screenshot saved — run 'show_annot' to view.")
-            print(f"  RED=match(>=0.8)  ORANGE=close(>=0.6)  YELLOW=miss(<0.6)")
-
-        # ── show last screenshot ──────────────────────────────────────────────
-        elif cmd == "show":
-            if last_bgr is None:
-                print("  No screenshot yet.")
-            else:
-                open_image(CAPTURED_PATH)
-
-        # ── show annotated screenshot ─────────────────────────────────────────
-        elif cmd == "show_annot":
-            if not os.path.exists(ANNOTATED_PATH):
-                print("  No annotated screenshot yet. Run a match command first.")
-            else:
-                open_image(ANNOTATED_PATH)
-
-        # ── list templates ────────────────────────────────────────────────────
-        elif cmd == "list":
-            if not templates:
-                print("  No templates found.")
-            else:
-                print(f"  Templates in {TEMPLATES_DIR}/:")
-                for name, data in sorted(templates.items()):
-                    h, w = data["simple"].shape[:2]
-                    print(f"    {name:<35} {w}x{h}px")
-
-        # ── tap ───────────────────────────────────────────────────────────────
-        elif cmd == "tap":
-            if len(parts) < 3:
-                print("  Usage: tap <x> <y>")
-            else:
-                try:
-                    x, y = int(parts[1]), int(parts[2])
-                    device.shell(f"input tap {x} {y}")
-                    print(f"  Tapped ({x}, {y})")
-                except ValueError:
-                    print("  x and y must be integers.")
-
-        # ── help / quit ───────────────────────────────────────────────────────
-        elif cmd == "help":
-            print_help()
-
-        elif cmd in ("q", "quit", "exit"):
-            print("Bye!")
-            break
-
-        else:
-            print(f"  Unknown command '{cmd}'. Type 'help' for available commands.")
+  """Connect to the device and run the sandbox."""
+  print('=== auto-eatventure sandbox ===')
+  print("Type 'help' for available commands.\n")
+  device = Device(config.DEVICE_SERIAL)
+  print(f'Connected to device: {device.serial}')
+  sandbox = Sandbox(device)
+  sandbox.load_templates()
+  _print_scale(sandbox)
+  run_commands(sandbox)
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+  main()
