@@ -25,10 +25,12 @@ Every wait logs `Init: waiting for game to be ready`, so an unknown
 dialog shows up in the log instead of a silent hang.
 
 These start dialogs come when the server answers, up to ~30 s after
-the game is ready, and not on every start. So after "game is ready"
-the screen is watched for `START_DIALOGS_WATCH_S` (30 s, a screenshot
-every 2 s): a dialog that dims it is closed like in step 1 of the
-null spot below. Screenshots: `experiments/start_dialogs/NOTES.md`.
+the game is ready, and not on every start. The bot doesn't wait for
+them: during the first `START_DIALOGS_WATCH_S` (60 s) of the game
+loop, every `START_DIALOGS_CHECK_S` (15 s) the loop screenshot is
+checked (`close_late_start_dialogs()`), and a dialog that dims it is
+closed like in step 1 of the null spot below. Screenshots:
+`experiments/start_dialogs/NOTES.md`.
 
 ## Null spot (ad protection)
 
@@ -82,6 +84,7 @@ while True:
     actions.select_popular_dish()           # when popular_dish_next_try passed
     actions.collect_adventure_rewards()     # after start, every 5 h
     device.capture_screenshot()
+    actions.close_late_start_dialogs()      # first 60 s, every 15 s
     actions.accept_food_delivery(...)       # truck available -> continue
     actions.invite_helper()                 # helper available -> continue
     actions.close_accidental_popups()       # every 150 iterations
@@ -102,6 +105,7 @@ while True:
 | Upgrade button shows its red badge | Open upgrade menu, buy affordable upgrades | `actions.try_upgrade_items()` |
 | `count % 10 == 0` (no food) | Check next level / city | `actions.check_to_go_next_level()` |
 | `count % 150 == 0` | Close accidental popups | `actions.close_accidental_popups()` |
+| First 60 s, every 15 s | Close late start dialogs (dimmed screen) | `actions.close_late_start_dialogs()` |
 | `FOOD_DELIVERY_ENABLED` and truck available | Accept the first Food Delivery order | `actions.accept_food_delivery()` |
 | `HELPER_INVITE_ENABLED` and helper available | Invite the first helper | `actions.invite_helper()` |
 | `COLLECT_ADVENTURES_ENABLED` and `adventures_next_check` passed (first loop, then every 5 h) | Collect the free Adventures rewards | `actions.collect_adventure_rewards()` |
