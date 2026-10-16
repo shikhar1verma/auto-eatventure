@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-from coords.geometry import Point, Region
+from auto_eatventure.coords.geometry import Point, Region
 
 # Matches of one object lie close together; they are merged into one
 # when at most this many pixels apart (DBSCAN eps, not scaled)

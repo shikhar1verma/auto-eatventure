@@ -3,8 +3,8 @@
 import logging
 import time
 
-from actions import chests
-from bot.logger import key_log
+from auto_eatventure.actions import chests
+from auto_eatventure.logger import key_log
 
 log = logging.getLogger(__name__)
 

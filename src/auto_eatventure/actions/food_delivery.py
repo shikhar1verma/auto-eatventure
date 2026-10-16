@@ -3,8 +3,8 @@
 import logging
 import time
 
-from actions import popups
-from coords.geometry import Point
+from auto_eatventure.actions import popups
+from auto_eatventure.coords.geometry import Point
 
 log = logging.getLogger(__name__)
 

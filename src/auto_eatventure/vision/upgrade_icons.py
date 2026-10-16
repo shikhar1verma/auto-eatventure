@@ -4,7 +4,7 @@ template matching would miss them)."""
 import cv2
 import numpy as np
 
-from coords.geometry import Point
+from auto_eatventure.coords.geometry import Point
 
 # Station upgrade icon: red circle (HSV (1, 179, 255)) with a white up
 # arrow. The arrow is found as a white shape, then the red circle

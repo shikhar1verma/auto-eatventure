@@ -3,8 +3,8 @@
 import logging
 import time
 
-from actions import popups, race_reward
-from bot.logger import key_log
+from auto_eatventure.actions import popups, race_reward
+from auto_eatventure.logger import key_log
 
 log = logging.getLogger(__name__)
 

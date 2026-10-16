@@ -1,7 +1,7 @@
 """ScaledCoords: coords/reference.py scaled to the phone's resolution."""
 
-from coords import reference
-from coords.geometry import Point, Region, Swipe
+from auto_eatventure.coords import reference
+from auto_eatventure.coords.geometry import Point, Region, Swipe
 
 
 class ScaledCoords:

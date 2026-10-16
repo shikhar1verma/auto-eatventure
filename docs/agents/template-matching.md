@@ -4,7 +4,7 @@
 
 ## Overview
 
-The project uses **OpenCV template matching** (`cv2.matchTemplate` with `TM_CCOEFF_NORMED`; `TM_SQDIFF_NORMED` for the Food Delivery truck and the helper button, see strategy 2) to detect game UI elements in screenshots. No OCR is used. The detection lives in `vision/`:
+The project uses **OpenCV template matching** (`cv2.matchTemplate` with `TM_CCOEFF_NORMED`; `TM_SQDIFF_NORMED` for the Food Delivery truck and the helper button, see strategy 2) to detect game UI elements in screenshots. No OCR is used. The detection lives in `vision/` (`src/auto_eatventure/vision/`; module paths below are relative to `src/auto_eatventure/`):
 
 - `vision/templates.py` -- catalog `TEMPLATE_NAMES`, loading and resizing
 - `vision/matching.py` -- `best_match()`, `closest_match()`, `all_matches()` (DBSCAN)
@@ -130,7 +130,7 @@ target_height = max(1, round(height * y_scale))
 
 - Scale factors = `actual_resolution / reference_resolution` (1220x2712)
 - Uses `INTER_AREA` when shrinking, `INTER_LINEAR` when enlarging
-- Can be overridden with `TEMPLATE_SCALE_OVERRIDE` env var (`_template_scale()` in `bot/main.py`)
+- Can be overridden with `TEMPLATE_SCALE_OVERRIDE` env var (`_template_scale()` in `main.py`)
 
 ## Debug Mode
 
@@ -138,8 +138,8 @@ Set `DEBUG_TEMPLATE_MATCHING="1"` in `.env` to log the score of every `find()` /
 
 ## Adding a New Template
 
-1. Capture screenshot with the element visible (`python sandbox.py`)
+1. Capture screenshot with the element visible (`PYTHONPATH=src python -m auto_eatventure.sandbox`)
 2. Crop the element tightly as PNG, save to `matching_screenshots/`
 3. Add its file name (without `.png`) to `TEMPLATE_NAMES` in `vision/templates.py`
 4. Search it in an `actions/` module with `game.screen.find()` / `has()` (or `find_exact()` / `find_all()`), ideally in a `Region` from `coords/reference.py`
-5. Wire the action into `GameLoop.play_once()` in `bot/game_loop.py`
+5. Wire the action into `GameLoop.play_once()` in `game_loop.py`

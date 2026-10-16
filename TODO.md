@@ -4,7 +4,7 @@ Possible improvements, not planned yet.
 
 ## Real game restart when stuck for a long time
 
-Stale recovery (`StaleWatch` in `actions/stale.py`) only brings the
+Stale recovery (`StaleWatch` in `src/auto_eatventure/actions/stale.py`) only brings the
 game to the foreground (`Device.start_app()`), it never restarts it.
 That does not help when the game itself is stuck, e.g. an ad that keeps
 coming back to the front (2026-10-12: an ad opened at 16:34 and the bot
@@ -14,8 +14,8 @@ later).
 Idea: when nothing can be updated for a long time (e.g. several stale
 recoveries in a row, ~10+ min), restart the game for real:
 
-1. `Device.close_app()` (`android/device.py`, `am force-stop`,
-   already exists, unused)
+1. `Device.close_app()` (`src/auto_eatventure/android/device.py`,
+   `am force-stop`, already exists, unused)
 2. `Device.start_app()`
 3. `start_dialogs.wait_until_ready()` (waits for the settings icon,
    taps known dialogs)

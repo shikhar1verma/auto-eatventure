@@ -4,8 +4,8 @@ Masterchef quest."""
 import logging
 import time
 
-from actions import popups
-from bot.logger import key_log
+from auto_eatventure.actions import popups
+from auto_eatventure.logger import key_log
 
 log = logging.getLogger(__name__)
 

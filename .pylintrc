@@ -1,5 +1,7 @@
 [MASTER]
 indent-string='  '
+# src layout: the package lives in src/
+source-roots=src
 
 [TYPECHECK]
 # cv2 is a compiled module, pylint can't see its members

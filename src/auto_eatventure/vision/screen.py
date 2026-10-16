@@ -4,8 +4,8 @@ import logging
 
 import cv2
 
-from coords.geometry import Region
-from vision import colors, matching
+from auto_eatventure.coords.geometry import Region
+from auto_eatventure.vision import colors, matching
 
 log = logging.getLogger(__name__)
 

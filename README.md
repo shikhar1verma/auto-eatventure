@@ -202,10 +202,13 @@ Command: `sudo apt-get install android-sdk-platform-tools`
 
     e. Once playable screen is opened now we will be run our python script which will do the magic.
 
-5. To autoplay the game just run below command.
+5. To autoplay the game just run below command from the project folder
+    (or use `./start.sh` / `start.bat`).
     ```
-    python adb_autoplay.py
+    PYTHONPATH=src python -m auto_eatventure
     ```
+    On Windows run `set PYTHONPATH=src` first, then
+    `python -m auto_eatventure`.
     It will run the python script and will interact with the emulator automatically.
 
 ## Optional Features
@@ -222,11 +225,13 @@ Optional features are switched on / off in `.env` (see `.env-sample`). The helpe
 
 ## Documentation
 
-`python adb_autoplay.py` starts the bot (`bot/main.py`); the endless
-game loop is `GameLoop` in `bot/game_loop.py`. The code is split into
-packages:
+All code is in one package, `src/auto_eatventure/` (src layout).
+`PYTHONPATH=src python -m auto_eatventure` (or `./start.sh` /
+`start.bat`) starts the bot (`main.py`) from the project root; the
+endless game loop is `GameLoop` in `game_loop.py`. Start-up, game loop,
+settings from `.env` and logging are modules at the package root; the
+rest is split into subpackages:
 
-- `bot/` - start-up, game loop, settings from `.env`, logging
 - `actions/` - game actions, one module per feature (station upgrades,
   Upgrades dialog, boxes, chests, next level, popups, optional
   features)

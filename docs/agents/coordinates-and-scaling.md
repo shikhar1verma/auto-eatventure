@@ -4,7 +4,7 @@
 
 ## Overview
 
-The coordinate system supports **any device resolution** from a single set of reference values calibrated at **1220x2712 pixels**. The `coords/` package provides resolution-independent positions.
+The coordinate system supports **any device resolution** from a single set of reference values calibrated at **1220x2712 pixels**. The `coords/` package (`src/auto_eatventure/coords/`; module paths below are relative to `src/auto_eatventure/`) provides resolution-independent positions.
 
 ## Module Chain
 
@@ -69,7 +69,7 @@ It also has `x_scale`, `y_scale` and `screen_width`. An unknown name raises `Att
 
 ### Resolution Detection
 
-`Device.screen_size()` (`android/device.py`) runs `wm size` and parses output like `"Physical size: 1080x2400"`. `bot/main.py` creates `ScaledCoords` from it; actions read it as `game.coords`.
+`Device.screen_size()` (`android/device.py`) runs `wm size` and parses output like `"Physical size: 1080x2400"`. `main.py` creates `ScaledCoords` from it; actions read it as `game.coords`.
 
 ## Adding New Coordinates
 

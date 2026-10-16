@@ -4,7 +4,7 @@ closing dialogs that come late."""
 import logging
 import time
 
-from actions import levels, popups, race_reward
+from auto_eatventure.actions import levels, popups, race_reward
 
 log = logging.getLogger(__name__)
 

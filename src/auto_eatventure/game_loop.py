@@ -1,11 +1,12 @@
 """GameLoop: the endless loop deciding what the bot does next."""
 
-from actions import (adventures, boxes, food_delivery, helper_invite,
-                     levels, popular_dish, popups, stations, upgrades)
-from actions.stale import StaleWatch
-from actions.start_dialogs import LateDialogWatch
-from bot import config
-from bot.timer import Timer
+from auto_eatventure import config
+from auto_eatventure.actions import (
+  adventures, boxes, food_delivery, helper_invite, levels, popular_dish,
+  popups, stations, upgrades)
+from auto_eatventure.actions.stale import StaleWatch
+from auto_eatventure.actions.start_dialogs import LateDialogWatch
+from auto_eatventure.timer import Timer
 
 # Every this many loops: popups closed, the next level checked (when
 # there is no station to upgrade), boxes opened

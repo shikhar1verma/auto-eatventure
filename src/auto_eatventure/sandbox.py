@@ -1,6 +1,8 @@
 """
 sandbox.py - Interactive testing tool for auto-eatventure
 
+Run from the project root: PYTHONPATH=src python -m auto_eatventure.sandbox
+
 Templates are automatically scaled to match the detected device
 resolution, the same way the bot scales them at runtime.
 
@@ -44,13 +46,13 @@ import sys
 
 import cv2
 
-from actions.boxes import BOX_THRESHOLD
-from android.device import Device
-from bot import config
-from coords.geometry import Point, Region
-from coords.scaled import ScaledCoords
-from vision import matching
-from vision.templates import TEMPLATES_DIR, load_template
+from auto_eatventure.actions.boxes import BOX_THRESHOLD
+from auto_eatventure.android.device import Device
+from auto_eatventure import config
+from auto_eatventure.coords.geometry import Point, Region
+from auto_eatventure.coords.scaled import ScaledCoords
+from auto_eatventure.vision import matching
+from auto_eatventure.vision.templates import TEMPLATES_DIR, load_template
 
 CAPTURED_PATH = 'captured_screenshots_on_the_fly/screenshot.png'
 ANNOTATED_PATH = (

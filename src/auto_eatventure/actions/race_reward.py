@@ -3,8 +3,8 @@
 import logging
 import time
 
-from bot.logger import key_log
-from coords.geometry import Region
+from auto_eatventure.logger import key_log
+from auto_eatventure.coords.geometry import Region
 
 log = logging.getLogger(__name__)
 
