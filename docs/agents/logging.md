@@ -4,12 +4,12 @@
 
 ## Overview
 
-The project uses Python's built-in `logging` module configured in `bot/logger.py`. All output goes through structured loggers instead of raw `print()` calls.
+The project uses Python's built-in `logging` module configured in `src/auto_eatventure/logger.py`. All output goes through structured loggers instead of raw `print()` calls.
 
 ## Architecture
 
 ```
-bot/logger.py          # setup_logging() + key_log
+logger.py              # setup_logging() + key_log
   |
   +-- Console handler  # StreamHandler -> stdout (default: INFO)
   |
@@ -22,7 +22,7 @@ bot/logger.py          # setup_logging() + key_log
 
 ## Configuration (via `.env`)
 
-Read in `bot/config.py`.
+Read in `config.py`.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
@@ -67,8 +67,8 @@ log.warning('Nothing to update for %d loops — bringing game to '
 ## Initialization
 
 `setup_logging(console_level, file_level, max_days)` must be called
-once at startup, before logging. `run()` in `bot/main.py` does it with
-the levels from `bot/config.py` (which loads `.env`):
+once at startup, before logging. `run()` in `main.py` does it with
+the levels from `config.py` (which loads `.env`):
 
 ```python
 setup_logging(config.LOG_LEVEL, config.LOG_FILE_LEVEL,
@@ -117,7 +117,7 @@ A separate file recording only key milestones. Useful for tracking progress (e.g
 ### Usage:
 
 ```python
-from bot.logger import key_log
+from auto_eatventure.logger import key_log
 
 key_log.info('FLY - Flying to next city')
 ```
@@ -144,7 +144,7 @@ Console format matches previous `print()` output (message only, no timestamps). 
 ## File Output Format
 
 ```
-2024-01-15 14:23:01,234 [INFO ] actions.chests: Chest found — opening
+2024-01-15 14:23:01,234 [INFO ] auto_eatventure.actions.chests: Chest found — opening
 ```
 
 File format includes timestamp, level, and module name for debugging.
@@ -161,9 +161,9 @@ File format includes timestamp, level, and module name for debugging.
 
 ## Rules
 
-- Never use `print()` in the bot (`adb_autoplay.py`, `actions/`, `android/`, `bot/`, `coords/`, `vision/`).
+- Never use `print()` in the bot (`src/auto_eatventure/`, except `sandbox.py`).
 - Experimental scripts and `sandbox.py` may still use `print()` for interactive CLI output.
 - Default console level (`INFO`) produces the same output users saw before the migration.
 - Increase to `DEBUG` only when troubleshooting specific issues.
-- Key game milestones must also be logged via `key_log` (`bot/logger.py`) for progress tracking.
+- Key game milestones must also be logged via `key_log` (`logger.py`) for progress tracking.
 - Key event messages follow the pattern: `EVENT_TYPE - description`.

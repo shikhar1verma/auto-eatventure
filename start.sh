@@ -1,3 +1,3 @@
 #!/bin/bash
 source .venv/bin/activate
-python3 adb_autoplay.py
+PYTHONPATH=src python3 -m auto_eatventure

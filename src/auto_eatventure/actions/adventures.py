@@ -5,10 +5,10 @@ import logging
 import time
 from typing import NamedTuple
 
-from actions import popups
-from bot.logger import key_log
-from coords.geometry import Point
-from vision.colors import RED
+from auto_eatventure.actions import popups
+from auto_eatventure.logger import key_log
+from auto_eatventure.coords.geometry import Point
+from auto_eatventure.vision.colors import RED
 
 log = logging.getLogger(__name__)
 

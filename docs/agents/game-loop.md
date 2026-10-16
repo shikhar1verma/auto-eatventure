@@ -4,13 +4,14 @@
 
 ## Overview
 
-The main game loop is `GameLoop` in `bot/game_loop.py`. `run()` calls
-`play_once()` **indefinitely**; each call takes one screenshot and
-works through the steps below, calling functions of the `actions/`
+The main game loop is `GameLoop` in `src/auto_eatventure/game_loop.py`
+(module paths below are relative to `src/auto_eatventure/`). `run()`
+calls `play_once()` **indefinitely**; each call takes one screenshot
+and works through the steps below, calling functions of the `actions/`
 modules (some steps end the loop early). The loop itself is pure
 orchestration.
 
-`run()` in `bot/main.py` prepares it: logging, connection to the phone,
+`run()` in `main.py` prepares it: logging, connection to the phone,
 `ScaledCoords` and scaled templates, `Device.start_app()`, the start
 dialogs and the null spot (below), then `GameLoop(game).run()`.
 
@@ -118,8 +119,8 @@ else:
   self._no_station_to_upgrade()   # stale count, next level check
 ```
 
-The optional steps run only when switched on in `bot/config.py` and
-their `Timer` (`bot/timer.py`) is due.
+The optional steps run only when switched on in `config.py` and
+their `Timer` (`timer.py`) is due.
 
 ## Periodic Actions
 

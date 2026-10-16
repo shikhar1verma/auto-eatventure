@@ -15,7 +15,7 @@ ran, ~0.5-1 s apart).
 Icon colors: red disk BGR (76, 84, 255) = HSV (1, 179, 255), arrow
 pure white. Under a dialog the red has V ~116-142.
 
-## Detection (`find_upgrade_icons()` in `vision/upgrade_icons.py`)
+## Detection (`find_upgrade_icons()` in `src/auto_eatventure/vision/upgrade_icons.py`)
 
 1. White mask (S <= 70, V >= 225; the pink glow of "Double" labels
    tints the arrow), connected components.

@@ -82,4 +82,4 @@ chmod +x start.sh
 ## Notes
 
 - **Emulator does not work** — Eatventure uses Google Play Games and blocks emulators (you cannot login). A real physical Android device is required.
-- All tap coordinates are calibrated at 1220x2712 (`coords/reference.py`) and scaled to your phone's resolution. On a phone with a different aspect ratio some of them may need adjustment.
+- All tap coordinates are calibrated at 1220x2712 (`src/auto_eatventure/coords/reference.py`) and scaled to your phone's resolution. On a phone with a different aspect ratio some of them may need adjustment.

@@ -4,11 +4,11 @@
 
 ## Overview
 
-All device interaction happens through **Android Debug Bridge (ADB)** via the `adbutils` Python library. The `Device` class in `android/device.py` encapsulates all ADB communication. Actions use it as `game.device`.
+All device interaction happens through **Android Debug Bridge (ADB)** via the `adbutils` Python library. The `Device` class in `android/device.py` (module paths are relative to `src/auto_eatventure/`) encapsulates all ADB communication. Actions use it as `game.device`.
 
 ## Device Connection
 
-`Device.__init__(serial)` in `android/device.py`, called from `bot/main.py` with `config.DEVICE_SERIAL`:
+`Device.__init__(serial)` in `android/device.py`, called from `main.py` with `config.DEVICE_SERIAL`:
 
 ```python
 if serial:

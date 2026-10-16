@@ -5,8 +5,8 @@ import logging
 import random
 import time
 
-from coords.geometry import Point, Swipe
-from vision.upgrade_icons import find_upgrade_icons
+from auto_eatventure.coords.geometry import Point, Swipe
+from auto_eatventure.vision.upgrade_icons import find_upgrade_icons
 
 log = logging.getLogger(__name__)
 

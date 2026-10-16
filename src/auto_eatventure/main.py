@@ -2,16 +2,16 @@
 
 import logging
 
-from actions import null_spot, start_dialogs
-from actions.game import Game
-from android.device import Device
-from bot import config
-from bot.game_loop import GameLoop
-from bot.logger import key_log, setup_logging
-from coords import reference
-from coords.scaled import ScaledCoords
-from vision.screen import Screen
-from vision.templates import load_templates
+from auto_eatventure.actions import null_spot, start_dialogs
+from auto_eatventure.actions.game import Game
+from auto_eatventure.android.device import Device
+from auto_eatventure import config
+from auto_eatventure.game_loop import GameLoop
+from auto_eatventure.logger import key_log, setup_logging
+from auto_eatventure.coords import reference
+from auto_eatventure.coords.scaled import ScaledCoords
+from auto_eatventure.vision.screen import Screen
+from auto_eatventure.vision.templates import load_templates
 
 log = logging.getLogger(__name__)
 

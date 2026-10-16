@@ -23,8 +23,9 @@
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-# Start emulator with Eatventure open, then:
-python adb_autoplay.py
+# Start emulator with Eatventure open, then (from the project root):
+set PYTHONPATH=src
+python -m auto_eatventure
 ```
 
 Or use: `start.bat`
@@ -35,8 +36,8 @@ Or use: `start.bat`
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-# Start emulator with Eatventure open, then:
-python3 adb_autoplay.py
+# Start emulator with Eatventure open, then (from the project root):
+PYTHONPATH=src python3 -m auto_eatventure
 ```
 
 Or use: `./start.sh`
@@ -104,19 +105,26 @@ Pylint configured via `.pylintrc`:
 - No docstring needed for functions shorter than 5 lines
 
 ```bash
-pylint adb_autoplay.py actions android bot coords vision sandbox.py
+pylint src/auto_eatventure
 ```
 
 ## Source File Layout
 
+src layout with one package. Run everything from the project root
+with `PYTHONPATH=src` (data paths like `matching_screenshots/`, `logs/`
+and `.env` are relative to it).
+
 ```
-adb_autoplay.py              # Entry point
-bot/                         # Start-up, game loop, settings, timer, logging
-actions/                     # Game actions, one module per feature
-android/                     # ADB device layer
-vision/                      # Screenshot, template matching, colors, icons
-coords/                      # Reference positions, geometry, scaling
-sandbox.py                   # Interactive testing tool
+src/auto_eatventure/
+  __main__.py                # Entry point: python -m auto_eatventure
+  main.py, game_loop.py, config.py, timer.py, logger.py
+                             # Start-up, game loop, settings, timer, logging
+  actions/                   # Game actions, one module per feature
+  android/                   # ADB device layer
+  vision/                    # Screenshot, template matching, colors, icons
+  coords/                    # Reference positions, geometry, scaling
+  sandbox.py                 # Interactive testing tool:
+                             # PYTHONPATH=src python -m auto_eatventure.sandbox
 ```
 
 See [Architecture](architecture.md) for the modules.

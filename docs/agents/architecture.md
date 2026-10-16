@@ -4,21 +4,21 @@
 
 ## Overview
 
-The project is a **multi-package Python bot** that automates the Android mobile game "Eatventure" via ADB and OpenCV. Each package has one concern: start-up and loop (`bot/`), game actions (`actions/`), the phone (`android/`), detection (`vision/`) and screen positions (`coords/`). Modules are small and focused.
+The project is a **Python bot** that automates the Android mobile game "Eatventure" via ADB and OpenCV. All code is in one package, `src/auto_eatventure/` (src layout; module paths below are relative to it). Start-up and loop are modules at the package root; each subpackage has one concern: game actions (`actions/`), the phone (`android/`), detection (`vision/`) and screen positions (`coords/`). Modules are small and focused.
 
 ## Core Architecture Diagram
 
 ```
-adb_autoplay.py --- entry point, calls bot.main.run()
+__main__.py --- entry point (python -m auto_eatventure), calls main.run()
     |
-    +-- bot/main.py --- logging, connect, wait for the game, start the loop
+    +-- main.py --- logging, connect, wait for the game, start the loop
     |       |
-    |       +-- bot/logger.py --- setup_logging(), key_log
-    |       +-- bot/config.py --- settings from .env
+    |       +-- logger.py --- setup_logging(), key_log
+    |       +-- config.py --- settings from .env
     |
-    +-- bot/game_loop.py (GameLoop) --- decides what to do next
+    +-- game_loop.py (GameLoop) --- decides what to do next
     |       |
-    |       +-- bot/timer.py (Timer) --- occasional actions
+    |       +-- timer.py (Timer) --- occasional actions
     |       +-- actions/*.py --- one module per game feature
     |
     +-- actions/game.py (Game) --- what every action works with
@@ -49,12 +49,12 @@ adb_autoplay.py --- entry point, calls bot.main.run()
 
 | Module | Main names | Responsibility |
 |--------|------------|----------------|
-| `adb_autoplay.py` | | Entry point, calls `bot.main.run()`. |
-| `bot/main.py` | `run()` | Sets up logging, connects to the phone, loads the scaled templates, starts the game, waits until it is ready, places the null spot, logs the features, runs `GameLoop`. |
-| `bot/game_loop.py` | `GameLoop` | The endless loop. `play_once()`: one screenshot, then the first action that applies. Keeps the loop state. |
-| `bot/config.py` | constants | Settings from the environment / `.env` (device serial, feature switches, template debugging, log levels). |
-| `bot/timer.py` | `Timer` | When an occasional action (Popular Dish, Adventures, ...) is due again. |
-| `bot/logger.py` | `setup_logging()`, `key_log` | Console + daily-rotating file handlers in `logs/`, key events log, crash and stop logging. |
+| `__main__.py` | | Entry point (`python -m auto_eatventure`), calls `main.run()`. |
+| `main.py` | `run()` | Sets up logging, connects to the phone, loads the scaled templates, starts the game, waits until it is ready, places the null spot, logs the features, runs `GameLoop`. |
+| `game_loop.py` | `GameLoop` | The endless loop. `play_once()`: one screenshot, then the first action that applies. Keeps the loop state. |
+| `config.py` | constants | Settings from the environment / `.env` (device serial, feature switches, template debugging, log levels). |
+| `timer.py` | `Timer` | When an occasional action (Popular Dish, Adventures, ...) is due again. |
+| `logger.py` | `setup_logging()`, `key_log` | Console + daily-rotating file handlers in `logs/`, key events log, crash and stop logging. |
 | `actions/game.py` | `Game` | Bundles `device`, `screen`, `coords` and `null_spot`; passed to every action function. |
 | `actions/start_dialogs.py` | `wait_until_ready()`, `close_dimming_dialogs()`, `LateDialogWatch` | Dialogs at the start of the bot. |
 | `actions/null_spot.py` | `place_below_top_bar()` | Places the null spot below the top bar at start. |
@@ -66,7 +66,7 @@ adb_autoplay.py --- entry point, calls bot.main.run()
 | `actions/popups.py` | `close_popup()`, `is_screen_dimmed()` | Red X popups, dimmed screen. |
 | `actions/race_reward.py` | `claim()` | "Restaurant Race ended!" reward. |
 | `actions/stale.py` | `StaleWatch` | Recovery and search swipes when nothing can be upgraded. |
-| `actions/popular_dish.py`, `food_delivery.py`, `helper_invite.py`, `adventures.py` | | Optional features (switches in `bot/config.py`). |
+| `actions/popular_dish.py`, `food_delivery.py`, `helper_invite.py`, `adventures.py` | | Optional features (switches in `config.py`). |
 | `android/device.py` | `Device` | ADB: `tap()`, `long_press()`, `swipe()`, `screenshot()` (BGR), `screen_size()`, `start_app()`, `close_app()`. |
 | `vision/screen.py` | `Screen` | Last screenshot in BGR / gray / HSV; `capture()`, `find()`, `has()`, `find_exact()`, `find_all()`, `color_ratio()`. |
 | `vision/templates.py` | `TEMPLATE_NAMES`, `load_templates()` | Template catalog, loading and resizing to the phone. |
@@ -102,7 +102,7 @@ There is **no persistent state**, no database, no save files. The bot is purely 
 
 ## Key Design Decisions
 
-- **Separation of concerns**: orchestration in `bot/game_loop.py`, device I/O in `android/`, detection in `vision/`, positions in `coords/`, game logic in `actions/`.
+- **Separation of concerns**: orchestration in `game_loop.py`, device I/O in `android/`, detection in `vision/`, positions in `coords/`, game logic in `actions/`.
 - **Plain functions**: game actions are functions taking a `Game`; classes only where state is kept (`GameLoop`, `StaleWatch`, `LateDialogWatch`, `Timer`, `Screen`, `Device`).
 - **KISS principle**: Each module has a single clear purpose. No inheritance hierarchies or complex patterns.
 - **Resolution scaling**: One set of reference coordinates scales to any device resolution via `ScaledCoords`.

@@ -9,7 +9,9 @@ Start android studio, connect my phone (resolution 1220x2712)
 
 Start Intellij IDEA -  there you can debug Python
 
-And run `adb_autoplay.py` - can be run in debug mode.
+And run the module `auto_eatventure` (`src/auto_eatventure/__main__.py`)
+from the project root with `src` on `PYTHONPATH`
+(`PYTHONPATH=src python -m auto_eatventure`) - can be run in debug mode.
 
 
 # Additional notes

@@ -3,10 +3,10 @@ popups, placed just below the top bar."""
 
 import logging
 
-from actions import start_dialogs
-from bot.logger import key_log
-from coords.geometry import Point
-from vision.top_bar import find_top_bar_line
+from auto_eatventure.actions import start_dialogs
+from auto_eatventure.logger import key_log
+from auto_eatventure.coords.geometry import Point
+from auto_eatventure.vision.top_bar import find_top_bar_line
 
 log = logging.getLogger(__name__)
 

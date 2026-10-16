@@ -4,7 +4,7 @@ red badge."""
 import logging
 import time
 
-from vision.colors import RED
+from auto_eatventure.vision.colors import RED
 
 log = logging.getLogger(__name__)
 

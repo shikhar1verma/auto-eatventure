@@ -3,7 +3,7 @@
 import logging
 import time
 
-from actions import popups
+from auto_eatventure.actions import popups
 
 log = logging.getLogger(__name__)
 

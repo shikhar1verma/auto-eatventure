@@ -8,7 +8,7 @@ numbers ending in _y vertically. Other values are not scaled.
 # Lowercase names: they are positions, read through ScaledCoords
 # pylint: disable=invalid-name
 
-from coords.geometry import Point, Region, Swipe
+from auto_eatventure.coords.geometry import Point, Region, Swipe
 
 REFERENCE_WIDTH = 1220
 REFERENCE_HEIGHT = 2712
