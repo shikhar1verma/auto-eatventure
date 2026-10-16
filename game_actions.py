@@ -83,11 +83,6 @@ UPGRADE_DIALOG_CLOSE_DELAY_S = 0.8
 SETTINGS_GEAR_MIN_BRIGHTNESS = 200
 # Dialogs closed at start before the null spot is placed, at most
 DIMMING_DIALOG_CLOSE_TRIES = 5
-# Start dialogs ("While you were away...", Offline Earnings) come
-# when the server answers, up to ~30 s after the game is ready, and
-# not on every start. The screen is watched this long after the start.
-START_DIALOGS_WATCH_S = 30
-START_DIALOGS_CHECK_S = 2
 # Red X popups closed at most when the game is stale (stacked dialogs)
 STALE_POPUP_CLOSE_TRIES = 3
 # "Restaurant Race ended!" (no X, only Claim): title / Claim templates
@@ -1128,7 +1123,7 @@ class GameActions:
     Taps known dialogs that can cover the screen when the bot is
     restarted, e.g. right after a renovation or a flight, and closes
     other dialogs by their red X (e.g. "While you were away...").
-    Then watches for dialogs that come late.
+    Dialogs that come late are closed by close_late_start_dialogs().
     """
     while True:
       self.device.capture_screenshot()
@@ -1153,20 +1148,15 @@ class GameActions:
       log.info('Init: waiting for game to be ready')
       time.sleep(5)
     log.info('Init: game is ready')
-    self._close_late_start_dialogs()
 
-  def _close_late_start_dialogs(self):
-    """Watch the screen for START_DIALOGS_WATCH_S and close dialogs
-    that dim it."""
-    log.info('Init: watching %d s for late start dialogs',
-             START_DIALOGS_WATCH_S)
-    deadline = time.monotonic() + START_DIALOGS_WATCH_S
-    while time.monotonic() < deadline:
-      time.sleep(START_DIALOGS_CHECK_S)
-      self.device.capture_screenshot()
-      if self.is_screen_dimmed():
-        log.info('Init: late start dialog, closing it')
-        self._close_dimming_dialogs()
+  def close_late_start_dialogs(self):
+    """Close start dialogs that came after init_game() (they dim the
+    loop screenshot). Returns True when the screen was dimmed."""
+    if not self.is_screen_dimmed():
+      return False
+    log.info('Late start dialog, closing it')
+    self._close_dimming_dialogs()
+    return True
 
   def place_null_click_below_top_bar(self):
     """Place the null spot just below the top bar's black line.

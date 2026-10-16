@@ -71,6 +71,13 @@ COLLECT_ADVENTURES_ENABLED = os.getenv(
 COLLECT_ADVENTURES_INTERVAL_S = 5 * 60 * 60
 COLLECT_ADVENTURES_RETRY_S = 60 * 60
 
+# Start dialogs ("While you were away...", Offline Earnings) come when
+# the server answers, up to ~30 s after the game is ready, and not on
+# every start. The game loop doesn't wait for them, it checks its
+# screenshot for them every 15 s during the first minute.
+START_DIALOGS_CHECK_S = 15
+START_DIALOGS_WATCH_S = 60
+
 
 class AutoEatventure:
   """Main bot orchestrator."""
@@ -115,6 +122,9 @@ class AutoEatventure:
     food_delivery_next_try = 0
     helper_invite_next_try = 0
     adventures_next_check = 0
+    start_dialogs_end = time.monotonic() + START_DIALOGS_WATCH_S
+    start_dialogs_next_check = (
+      time.monotonic() + START_DIALOGS_CHECK_S)
 
     while True:
       count += 1
@@ -133,6 +143,13 @@ class AutoEatventure:
         adventures_next_check = self._collect_adventures()
 
       self.device.capture_screenshot()
+
+      if (start_dialogs_next_check <= start_dialogs_end
+          and time.monotonic() >= start_dialogs_next_check):
+        start_dialogs_next_check = (
+          time.monotonic() + START_DIALOGS_CHECK_S)
+        if self.actions.close_late_start_dialogs():
+          continue
 
       if (FOOD_DELIVERY_ENABLED
           and time.monotonic() >= food_delivery_next_try):
