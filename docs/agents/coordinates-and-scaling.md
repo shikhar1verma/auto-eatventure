@@ -4,88 +4,85 @@
 
 ## Overview
 
-The coordinate system supports **any device resolution** from a single set of reference values calibrated at **1220x2712 pixels**. Three modules work together to provide resolution-independent coordinates.
+The coordinate system supports **any device resolution** from a single set of reference values calibrated at **1220x2712 pixels**. The `coords/` package (`src/auto_eatventure/coords/`; module paths below are relative to `src/auto_eatventure/`) provides resolution-independent positions.
 
 ## Module Chain
 
 ```
-coords.py (raw values at 1220x2712)
+coords/geometry.py (Point, Region, Swipe)
     |
     v
-scaled_coords.py (ScaledCoords proxy - scales by device ratio)
+coords/reference.py (positions at 1220x2712)
     |
     v
-constants.py (Constants - bundles into {x, y} dicts)
+coords/scaled.py (ScaledCoords - scales by device ratio)
     |
     v
-game_actions.py (uses self.loc.xxx for all interactions)
+actions/*.py (game.coords.<name> for all interactions)
 ```
 
-## coords.py
+## coords/geometry.py
 
-Pure data module at project root. Contains:
+Three `NamedTuple`s:
+
+- `Point(x, y)` -- a pixel on the screen (tap target)
+- `Region(left, top, right, bottom)` -- a rectangle (search area; right and bottom excluded). `Region.around(point, half_width, half_height)` builds one around a point; `center`, `crop(image)`, `moved(dx, dy)`.
+- `Swipe(start, end)` -- a swipe gesture between two `Point`s
+
+## coords/reference.py
+
+Pure data module. Contains:
 
 - `REFERENCE_WIDTH = 1220` and `REFERENCE_HEIGHT = 2712`
-- All tap coordinates (buttons, menus, UI elements)
-- All swipe start/end coordinates
-- Y-boundary thresholds for safe zones
-- Click offsets for fine-tuned positioning
-- DBSCAN clustering parameter (`dbscan_eps = 10`)
+- All tap targets as `Point` (buttons, menus, UI elements)
+- All search areas as `Region` (names ending in `_roi`)
+- All swipes as `Swipe`
+- Y boundaries of safe zones and tap offsets as plain numbers
 
 ### Naming Convention
 
-All coordinate variables follow: `<element_name>_<x|y>`
+Positions are lowercase names. Plain numbers end in `_x` or `_y`:
 
 ```python
-settings_x = 1134
-settings_y = 161
-swipe_layout_down_start_x = 646
-swipe_layout_down_start_y = 1889
+settings = Point(1134, 161)
+settings_roi = Region.around(settings, 30, 30)
+swipe_down = Swipe(Point(646, 1889), Point(646, 1239))
+station_icon_max_y = 2200
+side_button_zone_width_x = 180
 ```
 
-**Rule**: Variables with `_x` suffix are scaled horizontally, `_y` suffix vertically. Variables without these suffixes (e.g., `dbscan_eps`) pass through unscaled.
+**Rule**: `Point`, `Region` and `Swipe` are scaled in both directions. Numbers with the `_x` suffix are scaled horizontally, `_y` suffix vertically. Other values pass through unscaled; non-pixel values (counts, ratios, thresholds) live in the module that uses them, not here.
 
-## scaled_coords.py
+## coords/scaled.py
 
 `ScaledCoords` uses Python's `__getattr__` to intercept attribute access:
 
 ```python
 sc = ScaledCoords(actual_w, actual_h)
-sc.settings_x    # returns round(1134 * (actual_w / 1220))
-sc.settings_y    # returns round(161 * (actual_h / 2712))
-sc.dbscan_eps    # returns 10 (no suffix, no scaling)
+sc.settings              # Point(round(1134 * actual_w / 1220),
+                         #       round(161 * actual_h / 2712))
+sc.station_icon_max_y    # round(2200 * actual_h / 2712)
+sc.first_dish_candidates # tuple of scaled Points
 ```
+
+It also has `x_scale`, `y_scale` and `screen_width`. An unknown name raises `AttributeError` naming `coords/reference.py`.
 
 ### Resolution Detection
 
-`detect_resolution(device)` calls `device.shell("wm size")` and parses output like `"Physical size: 1080x2400"`.
-
-## constants.py
-
-`Constants` bundles coordinate pairs into dicts:
-
-```python
-self.settings_coords = {'x': sc.settings_x, 'y': sc.settings_y}
-self.swipe_layout_down_coords = {
-    'start': {'x': ..., 'y': ...},
-    'end': {'x': ..., 'y': ...}
-}
-```
-
-Used as: `self.device.click(self.loc.settings_coords)`
+`Device.screen_size()` (`android/device.py`) runs `wm size` and parses output like `"Physical size: 1080x2400"`. `main.py` creates `ScaledCoords` from it; actions read it as `game.coords`.
 
 ## Adding New Coordinates
 
-1. Add raw pixel values to `coords.py` with `_x` / `_y` suffix
-2. If it's a tap target, add a `{x, y}` dict in `constants.py`
-3. If it's a swipe, add a `{start: {x, y}, end: {x, y}}` dict
-4. Use via `self.loc.<name>_coords` in `game_actions.py`
+1. Add the position to `coords/reference.py`: `Point` for a tap target, `Region` for a search area, `Swipe` for a swipe, a number with `_x` / `_y` suffix for an offset or boundary
+2. Use it as `game.coords.<name>` in an `actions/` module, e.g. `game.device.tap(game.coords.<name>)` or `game.screen.find('<template>', game.coords.<name>_roi)`
 
 ## Key Boundaries and Thresholds
 
 | Variable | Value | Purpose |
 |----------|-------|---------|
-| `danger_max_y` | 2200 | Items below this excluded from food detection |
-| `food_icon_tooltip_boundary_y` | 1240 | Food icons above this need offset click |
-| `food_icon_top_boundary_y` | 1100 | Icons above this trigger swipe-up |
-| `dbscan_eps` | 10 | DBSCAN pixel distance (not scaled) |
+| `station_icon_max_y` | 2200 | Icons below this are ignored (club button, red badge of the Upgrades button) |
+| `station_icon_tooltip_y` | 1240 | Icons above this need a special tap to avoid the tooltip |
+| `station_icon_min_y` | 1100 | Icons above this trigger a swipe up |
+| `side_button_zone_width_x` | 180 | Station taps keep this far from the screen edges |
+
+The DBSCAN pixel distance (`CLUSTER_MAX_DISTANCE = 10`, not scaled) is in `vision/matching.py`.

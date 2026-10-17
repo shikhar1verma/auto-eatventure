@@ -202,58 +202,46 @@ Command: `sudo apt-get install android-sdk-platform-tools`
 
     e. Once playable screen is opened now we will be run our python script which will do the magic.
 
-5. To autoplay the game just run below command.
+5. To autoplay the game just run below command from the project folder
+    (or use `./start.sh` / `start.bat`).
     ```
-    python adb_autoplay.py
+    PYTHONPATH=src python -m auto_eatventure
     ```
+    On Windows run `set PYTHONPATH=src` first, then
+    `python -m auto_eatventure`.
     It will run the python script and will interact with the emulator automatically.
 
-    There is one more script autoplay.py that is a failed attempt as I was trying to directly run the game through UI elements.
+## Optional Features
+
+Optional features are switched on / off in `.env` (see `.env-sample`). The helper invite and the Adventures collection are on by default.
+
+| Setting | What it does |
+|---------|--------------|
+| `HELPER_INVITE_ENABLED="0"` | Turns **off** inviting helpers (on by default): whenever the helper (person) button (top-left) is available, opens "Invite a helper" and invites the first helper. The helper works for ~4 min (the ad offered to extend it is never watched), then a ~30 min cooldown follows. |
+| `POPULAR_DISH_ENABLED="1"` | Selects the **Popular Dish** active skill (first dish), starts it and immediately stops it again. The skill effect is not used at all; it is only useful to complete the **Masterchef quest** for selecting a popular dish. Repeats after every renovation / new city (once the first stand is open) and every ~10 min (skill cooldown). |
+| `FOOD_DELIVERY_ENABLED="1"` | Accepts **Food Delivery** orders: whenever the delivery truck button (top-left) is available, opens it and accepts the first order. The delivery completes by itself, then a ~3 min cooldown follows. Useful mainly to complete the Food Delivery quest. |
+| `COLLECT_ADVENTURES_ENABLED="0"` | Turns **off** collecting the free **Adventures** rewards (on by default): right after the start and then every 5 hours, opens "Events" (party popper, top-right) and completes the last level of Zeus' Feast and Hangry Pirates while they still have keys. Runs offered for an ad are never used. |
 
 
 ## Documentation
 
-Here is a summary of what the classes and functions in the script do:
+All code is in one package, `src/auto_eatventure/` (src layout).
+`PYTHONPATH=src python -m auto_eatventure` (or `./start.sh` /
+`start.bat`) starts the bot (`main.py`) from the project root; the
+endless game loop is `GameLoop` in `game_loop.py`. Start-up, game loop,
+settings from `.env` and logging are modules at the package root; the
+rest is split into subpackages:
 
-**Timer**: This is a context manager class for timing the execution of blocks of code. It is used throughout the script to measure the time taken to complete various tasks.
+- `actions/` - game actions, one module per feature (station upgrades,
+  Upgrades dialog, boxes, chests, next level, popups, optional
+  features)
+- `android/` - the phone over ADB (taps, swipes, screenshots)
+- `vision/` - template matching and color / shape detection on
+  screenshots
+- `coords/` - screen positions at 1220x2712, scaled to the phone
 
-**AutoEatventure**: This is the main class that automates the gameplay. 
-
-Here are the key methods:
-
-These methods perform simple actions in the game interface.
- 1. click
- 2. click_and_hold
- 3. input_text
- 4. swipe: 
- 
-These methods find specific game elements on the screen and interact with them.
-
-1. get_better_food_button 
-2. get_ad_cross_button
-3. redeem_investor 
-
-These methods are used to deal with ads in the game.
-
-1. run_full_boost_ads
-2. run_ad 
-
-These methods handle various aspects of the gameplay, like opening chests, upgrading items, moving to the next level, etc.
-
-1. open_chests
-2. check_to_go_next_level
-3. upgrade_food_items
-4. open_boxes
-5. do_upgrades 
-
-These methods handle the game's start-up process and the main gameplay loop.
-
-1. login_with_cloud
-2. start_game_for_first_time
-3. init_game
-4. start_playing_game 
-
-The script finishes with some driver code that creates an instance of the AutoEatventure class and starts the game.
+See [AGENTS.md](AGENTS.md) and [docs/agents/](docs/agents/) for
+details.
 
 ## Contribution
 

@@ -4,74 +4,108 @@
 
 ## Overview
 
-The project is a **multi-module Python bot** that automates the Android mobile game "Eatventure" via ADB and OpenCV template matching. The architecture separates concerns into distinct modules while keeping each one simple and focused.
+The project is a **Python bot** that automates the Android mobile game "Eatventure" via ADB and OpenCV. All code is in one package, `src/auto_eatventure/` (src layout; module paths below are relative to it). Start-up and loop are modules at the package root; each subpackage has one concern: game actions (`actions/`), the phone (`android/`), detection (`vision/`) and screen positions (`coords/`). Modules are small and focused.
 
 ## Core Architecture Diagram
 
 ```
-adb_autoplay.py (AutoEatventure - orchestrator)
+__main__.py --- entry point (python -m auto_eatventure), calls main.run()
     |
-    +-- logger.py --- centralized logging (console + file)
-    |
-    +-- device.py (Device) --- ADB interaction layer
-    |
-    +-- template_matcher.py (TemplateMatcher) --- OpenCV detection engine
+    +-- main.py --- logging, connect, wait for the game, start the loop
     |       |
-    |       +-- matching_screenshots/ --- PNG template images
+    |       +-- logger.py --- setup_logging(), key_log
+    |       +-- config.py --- settings from .env
     |
-    +-- game_actions.py (GameActions) --- game logic and actions
+    +-- game_loop.py (GameLoop) --- decides what to do next
     |       |
-    |       +-- uses Device for input
-    |       +-- uses TemplateMatcher for detection
-    |       +-- uses Constants for coordinates
+    |       +-- timer.py (Timer) --- occasional actions
+    |       +-- actions/*.py --- one module per game feature
     |
-    +-- constants.py (Constants) --- coordinate dicts for click/swipe targets
-    |       |
-    |       +-- scaled_coords.py (ScaledCoords) --- resolution-adaptive proxy
-    |               |
-    |               +-- coords.py --- raw pixel values (reference: 1220x2712)
+    +-- actions/game.py (Game) --- what every action works with
+            |
+            +-- android/device.py (Device) --- ADB taps, swipes, screenshots
+            |
+            +-- vision/screen.py (Screen) --- last screenshot, searches
+            |       |
+            |       +-- vision/templates.py --- TEMPLATE_NAMES, loading
+            |       |       |
+            |       |       +-- matching_screenshots/ --- PNG templates
+            |       +-- vision/matching.py --- cv2.matchTemplate, DBSCAN
+            |       +-- vision/colors.py --- HSV ranges, color_ratio()
+            |
+            +-- coords/scaled.py (ScaledCoords) --- scaled positions
+            |       |
+            |       +-- coords/reference.py --- positions at 1220x2712
+            |       +-- coords/geometry.py --- Point, Region, Swipe
+            |
+            +-- null_spot --- Point tapped to close station popups
 ```
+
+`vision/upgrade_icons.py` (station icons) and `vision/top_bar.py`
+(top bar line) work on a screenshot array and are called from
+`actions/stations.py` and `actions/null_spot.py`.
 
 ## Module Responsibilities
 
-| Module | Class | Responsibility |
-|--------|-------|---------------|
-| `adb_autoplay.py` | `AutoEatventure` | Entry point. Initializes logging and all modules, runs the ~40-line game loop that calls high-level actions. |
-| `logger.py` | (module-level) | Centralized logging configuration. Console handler (INFO default) + daily-rotating file handler (DEBUG default) writing to `logs/`. |
-| `device.py` | `Device` | ADB device interaction: click, swipe, text input, screenshot capture, app lifecycle. |
-| `template_matcher.py` | `TemplateMatcher` | Template loading/resizing, `find_template()`, `find_all_templates()` with DBSCAN, color masking, pixel color checks. |
-| `game_actions.py` | `GameActions` | All game logic: detection helpers (`is_having_*`), game actions (upgrade, boxes, chests, levels), stale state recovery, layout adjustments. |
-| `coords.py` | (module-level) | All reference-resolution pixel coordinates calibrated for 1220x2712. Pure data, no logic. |
-| `scaled_coords.py` | `ScaledCoords` | Proxy that scales `coords.py` values to actual device resolution. `_x` suffix scales horizontally, `_y` suffix scales vertically. |
-| `constants.py` | `Constants` | Bundles scaled coordinates into `{x, y}` dicts for cleaner call sites. |
+| Module | Main names | Responsibility |
+|--------|------------|----------------|
+| `__main__.py` | | Entry point (`python -m auto_eatventure`), calls `main.run()`. |
+| `main.py` | `run()` | Sets up logging, connects to the phone, loads the scaled templates, starts the game, waits until it is ready, places the null spot, logs the features, runs `GameLoop`. |
+| `game_loop.py` | `GameLoop` | The endless loop. `play_once()`: one screenshot, then the first action that applies. Keeps the loop state. |
+| `config.py` | constants | Settings from the environment / `.env` (device serial, feature switches, template debugging, log levels). |
+| `timer.py` | `Timer` | When an occasional action (Popular Dish, Adventures, ...) is due again. |
+| `logger.py` | `setup_logging()`, `key_log` | Console + daily-rotating file handlers in `logs/`, key events log, crash and stop logging. |
+| `actions/game.py` | `Game` | Bundles `device`, `screen`, `coords` and `null_spot`; passed to every action function. |
+| `actions/start_dialogs.py` | `wait_until_ready()`, `close_dimming_dialogs()`, `LateDialogWatch` | Dialogs at the start of the bot. |
+| `actions/null_spot.py` | `place_below_top_bar()` | Places the null spot below the top bar at start. |
+| `actions/stations.py` | `find_icons()`, `upgrade()`, `reposition_after_new_level()`, `scroll_if_icons_too_high()` | Station upgrade icons and restaurant scrolling. |
+| `actions/upgrades.py` | `buy_if_available()` | Upgrades dialog. |
+| `actions/boxes.py` | `open_all()` | Food boxes. |
+| `actions/chests.py` | `open_all()` | Chests of a new level. |
+| `actions/levels.py` | `go_to_next_level()`, `tap_welcome_okay()`, `tap_open_button()` | Renovate / fly to the next city and the dialogs after it. |
+| `actions/popups.py` | `close_popup()`, `is_screen_dimmed()` | Red X popups, dimmed screen. |
+| `actions/race_reward.py` | `claim()` | "Restaurant Race ended!" reward. |
+| `actions/stale.py` | `StaleWatch` | Recovery and search swipes when nothing can be upgraded. |
+| `actions/popular_dish.py`, `food_delivery.py`, `helper_invite.py`, `adventures.py` | | Optional features (switches in `config.py`). |
+| `android/device.py` | `Device` | ADB: `tap()`, `long_press()`, `swipe()`, `screenshot()` (BGR), `screen_size()`, `start_app()`, `close_app()`. |
+| `vision/screen.py` | `Screen` | Last screenshot in BGR / gray / HSV; `capture()`, `find()`, `has()`, `find_exact()`, `find_all()`, `color_ratio()`. |
+| `vision/templates.py` | `TEMPLATE_NAMES`, `load_templates()` | Template catalog, loading and resizing to the phone. |
+| `vision/matching.py` | `best_match()`, `closest_match()`, `all_matches()` | OpenCV template matching, DBSCAN clustering. |
+| `vision/colors.py` | `RED`, `color_ratio()` | HSV color ranges and their share of an image. |
+| `vision/upgrade_icons.py` | `find_upgrade_icons()` | Station upgrade icons by shape and color. |
+| `vision/top_bar.py` | `find_top_bar_line()` | Black line at the bottom of the top bar. |
+| `coords/reference.py` | positions | All screen positions at 1220x2712. Pure data, no logic. |
+| `coords/geometry.py` | `Point`, `Region`, `Swipe` | Shapes positions are made of. |
+| `coords/scaled.py` | `ScaledCoords` | Scales `reference.py` to the phone's resolution. |
 
 ## Data Flow (One Iteration)
 
-1. `AutoEatventure.start_playing_game()` calls `device.capture_screenshot()`
-2. `Device` captures screenshot via ADB, stores as BGR/grayscale/HSV numpy arrays
-3. `GameActions` methods access the current frame via `device.current_cv2_sc_*`
-4. `TemplateMatcher` runs `cv2.matchTemplate()` against relevant templates
-5. DBSCAN deduplicates multi-match results into centroids
-6. `GameActions` executes game actions (tap/swipe) via `Device`
-7. Loop repeats
+1. `GameLoop.play_once()` calls `game.screen.capture()`
+2. `Screen` gets a BGR screenshot from `Device.screenshot()` (ADB) and keeps it as BGR, grayscale and HSV numpy arrays
+3. Action functions search the current screenshot via `game.screen` (`find()`, `has()`, `color_ratio()`, ...) or pass `game.screen.hsv` to `vision/upgrade_icons.py`
+4. `vision/matching.py` runs `cv2.matchTemplate()`; DBSCAN merges multiple matches of one object (`find_all()`)
+5. Actions tap / swipe via `game.device` at positions from `game.coords`
+6. Loop repeats
 
 ## State Management
 
-State is purely **in-memory variables** in the game loop:
+State is purely **in-memory** in `GameLoop` and its helpers:
 
-- `count` -- iteration counter driving periodic actions
-- `nothing_to_update_count` -- consecutive frames with no food icons found
-- `new_level_started` / `new_level_first_food_icon_swipe` -- post-level-transition flags
-- `swipe_count` -- cycles through swipe pattern array
+- `loops` -- iteration counter driving periodic actions
+- `StaleWatch.idle_loops` -- consecutive loops with no station icon found (reset after stale recovery and on a new level)
+- `needs_reposition` -- the first station icons of a level reposition the restaurant
+- `popular_dish_waits_for_upgrade` -- after a level change Popular Dish waits for the first station upgrade
+- `Timer`s of the optional features, `LateDialogWatch` for the first minute
+- `game.null_spot` -- placed once at start
 
 There is **no persistent state**, no database, no save files. The bot is purely reactive.
 
 ## Key Design Decisions
 
-- **Separation of concerns**: orchestration in `adb_autoplay.py`, device I/O in `device.py`, detection in `template_matcher.py`, game logic in `game_actions.py`.
-- **Flat file structure**: No `src/` directory. All core modules at project root.
+- **Separation of concerns**: orchestration in `game_loop.py`, device I/O in `android/`, detection in `vision/`, positions in `coords/`, game logic in `actions/`.
+- **Plain functions**: game actions are functions taking a `Game`; classes only where state is kept (`GameLoop`, `StaleWatch`, `LateDialogWatch`, `Timer`, `Screen`, `Device`).
 - **KISS principle**: Each module has a single clear purpose. No inheritance hierarchies or complex patterns.
 - **Resolution scaling**: One set of reference coordinates scales to any device resolution via `ScaledCoords`.
 - **Template matching over OCR**: More reliable for Unity game UI where text rendering varies.
 - **In-memory screenshots**: Avoids disk I/O on every iteration.
-- **Clean game loop**: Main loop reads like a checklist of actions; implementation details hidden in methods.
+- **Clean game loop**: `play_once()` reads like a checklist of actions; implementation details live in `actions/`.

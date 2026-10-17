@@ -40,7 +40,7 @@ Set `DEBUG_TEMPLATE_MATCHING="1"` only when troubleshooting template detection. 
 4. **Python virtual environment** created at `.venv` in the project root
 5. **Python dependencies** installed (`requirements.txt` updated from exact old pins to `>=` minimum versions for Python 3.13 compatibility)
 6. **Android command-line tools** downloaded and installed into the SDK
-7. **Pixel_6_Pro_Manual** emulator (AVD) created — resolution 1440×3120, which matches the coordinates in `constants.py`
+7. **Pixel_6_Pro_Manual** emulator (AVD) created — resolution 1440×3120 (the bot scales the positions in `src/auto_eatventure/coords/reference.py`, calibrated at 1220×2712)
 8. **`.env` file** created from `.env-sample`
 
 ## What You Still Need to Do
@@ -85,11 +85,12 @@ Download the Eatventure APK (v1.6.0 recommended) from [apkpure](https://apkpure.
    ```
    cd C:\repos\auto-eatventure
    .\.venv\Scripts\activate
-   python adb_autoplay.py
+   set PYTHONPATH=src
+   python -m auto_eatventure
    ```
 
 ## Notes
 
-- The emulator **must** be Pixel_6_Pro_Manual (1440×3120) — all tap coordinates in `constants.py` are calibrated for this resolution.
+- Positions are calibrated at 1220×2712 (`src/auto_eatventure/coords/reference.py`) and scaled to the device resolution, so other resolutions work too (on another aspect ratio some positions may need adjustment).
 - The project was originally built for Ubuntu/Python 3.7. We updated `requirements.txt` to use `>=` minimum versions so it works with Python 3.13.
 - ADB is provided by the Android SDK at `%LOCALAPPDATA%\Android\Sdk\platform-tools` and is now on your PATH.

@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-1. **Python 3.10+** (uses `tuple[int, int]` type hints)
+1. **Python 3.10+**
 2. **A physical Android device** (recommended) or Android Studio emulator
 3. **ADB** installed and on system PATH
 4. **Eatventure** game installed on the device/emulator
@@ -23,8 +23,9 @@
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-# Start emulator with Eatventure open, then:
-python adb_autoplay.py
+# Start emulator with Eatventure open, then (from the project root):
+set PYTHONPATH=src
+python -m auto_eatventure
 ```
 
 Or use: `start.bat`
@@ -35,8 +36,8 @@ Or use: `start.bat`
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-# Start emulator with Eatventure open, then:
-python3 adb_autoplay.py
+# Start emulator with Eatventure open, then (from the project root):
+PYTHONPATH=src python3 -m auto_eatventure
 ```
 
 Or use: `./start.sh`
@@ -49,11 +50,27 @@ Copy `.env-sample` to `.env` and configure:
 # Optional: target specific device (from `adb devices`)
 device_serial=""
 
-# Debug: print raw template matching values (very noisy)
+# Debug: log the score of every template check (very noisy)
 DEBUG_TEMPLATE_MATCHING="0"
 
 # Optional: override auto-computed template scale factor
 TEMPLATE_SCALE_OVERRIDE=""
+
+# Optional: "1" = select Popular Dish and stop it right away, only to
+# complete the Masterchef "select a popular dish" quest. Default off.
+POPULAR_DISH_ENABLED="0"
+
+# Optional: "1" = accept the first Food Delivery order whenever one is
+# available (mainly for the Food Delivery quest). Default off.
+FOOD_DELIVERY_ENABLED="0"
+
+# Optional: "0" = don't invite the first helper whenever one can be
+# invited. Default on.
+HELPER_INVITE_ENABLED="1"
+
+# Optional: "0" = don't collect the free Adventures rewards after the
+# start and every 5 hours. Default on.
+COLLECT_ADVENTURES_ENABLED="1"
 
 # Logging: console level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 LOG_LEVEL="INFO"
@@ -84,20 +101,30 @@ Pylint configured via `.pylintrc`:
 - 2-space indentation
 - Max line length: 79 characters
 - LF line endings
+- `cv2.*` as generated members (compiled module)
+- No docstring needed for functions shorter than 5 lines
 
 ```bash
-pylint adb_autoplay.py device.py template_matcher.py game_actions.py
+pylint src/auto_eatventure
 ```
 
 ## Source File Layout
 
+src layout with one package. Run everything from the project root
+with `PYTHONPATH=src` (data paths like `matching_screenshots/`, `logs/`
+and `.env` are relative to it).
+
 ```
-adb_autoplay.py              # Entry point + game loop (~86 lines)
-logger.py                    # Logging setup (~75 lines)
-device.py                    # ADB device layer (~115 lines)
-template_matcher.py          # OpenCV matching (~267 lines)
-game_actions.py              # Game logic (~411 lines)
-coords.py                    # Reference coordinates
-scaled_coords.py             # Resolution scaling
-constants.py                 # Coordinate dicts
+src/auto_eatventure/
+  __main__.py                # Entry point: python -m auto_eatventure
+  main.py, game_loop.py, config.py, timer.py, logger.py
+                             # Start-up, game loop, settings, timer, logging
+  actions/                   # Game actions, one module per feature
+  android/                   # ADB device layer
+  vision/                    # Screenshot, template matching, colors, icons
+  coords/                    # Reference positions, geometry, scaling
+  sandbox.py                 # Interactive testing tool:
+                             # PYTHONPATH=src python -m auto_eatventure.sandbox
 ```
+
+See [Architecture](architecture.md) for the modules.

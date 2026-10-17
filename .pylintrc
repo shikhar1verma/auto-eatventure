@@ -1,8 +1,19 @@
 [MASTER]
 indent-string='  '
+# src layout: the package lives in src/
+source-roots=src
 
-[MESSAGES CONTROL]
-disable=C0330
+[TYPECHECK]
+# cv2 is a compiled module, pylint can't see its members
+generated-members=cv2.*
+
+[BASIC]
+# Short functions are named well enough, no docstring needed
+docstring-min-length=5
+
+[DESIGN]
+max-attributes=10
+min-public-methods=0
 
 [FORMAT]
 max-line-length=79
